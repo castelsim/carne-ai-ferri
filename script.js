@@ -117,7 +117,9 @@ function renderTimeline(eventi) {
     cb.disabled = true;
 
     const label = document.createElement('span');
-    label.textContent = ev.msg;
+    // Mostra anche l'orario atteso dell'evento
+    const when = startTs ? formatTime(new Date(startTs + ev.tempo * 1000)) : "";
+    label.textContent = when ? `${when} — ${ev.msg}` : ev.msg;
 
     li.appendChild(cb);
     li.appendChild(label);
