@@ -3,12 +3,38 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BBQ Timer Scaglionato</title>
   <link rel="stylesheet" href="style.css">
-  <title>Carne AI Ferri</title>
 </head>
 <body>
-  <!-- Inserire qui il markup HTML della pagina (titolo, form, pulsanti ecc.) -->
-  
+  <h1>BBQ Timer Scaglionato</h1>
+  <p>Seleziona cosa cucini, poi premi Avvia: l'app sincronizza gli avvii per finire tutto insieme e ti dirà quando <em>mettere</em>, <em>girare</em> e <em>togliere</em>.</p>
+
+  <div id="scelta">
+    <h2>Cosa vuoi cuocere?</h2>
+    <label><input type="checkbox" class="food" value="pollo" checked> Pollo (25 min)</label>
+    <label><input type="checkbox" class="food" value="costine"> Costine (20 min)</label>
+    <label><input type="checkbox" class="food" value="salsicce"> Salsicce (12 min)</label>
+    <label><input type="checkbox" class="food" value="pancetta" checked> Pancetta (6 min)</label>
+    <label><input type="checkbox" class="food" value="bistecca"> Bistecca di manzo (spessore ~2.5 cm)</label>
+    <div id="bistecca-opts" class="opts hidden">
+      <label>Grado:
+        <select id="grado-bistecca">
+          <option value="rare" selected>Al sangue (tot ~5 min)</option>
+          <option value="medium">Media (tot ~8 min)</option>
+          <option value="well">Ben cotta (tot ~10 min)</option>
+        </select>
+      </label>
+      <p class="hint">Tempi indicativi per bistecche ~2.5 cm. Per spessori diversi i tempi variano.</p>
+    </div>
+    <p class="hint">Suggerimento: seleziona solo ciò che cucini davvero. L'app parte dal pezzo con cottura più lunga e sincronizza gli altri per finire insieme.</p>
+  </div>
+
+  <button id="startBtn">Avvia Scaletta</button>
+
+  <div id="next"></div>
+  <div id="log"></div>
+
   <script src="script.js"></script>
 </body>
 </html>
