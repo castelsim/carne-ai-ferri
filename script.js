@@ -6,6 +6,14 @@ const DURATE = {
   pancetta: 6 * 60   // 360
 };
 
+// Indizi di girata per la timeline
+const FLIP_HINT = {
+  pollo: "6–8",
+  costine: "5–6",
+  salsicce: "4–5",
+  pancetta: "2–3"
+};
+
 // UI
 const logEl    = document.getElementById("log");
 const nextEl   = document.getElementById("next");
@@ -14,66 +22,75 @@ const bisteccaCb    = document.querySelector('input.food[value="bistecca"]');
 const bisteccaOpts  = document.getElementById('bistecca-opts');
 const gradoBistecca = document.getElementById('grado-bistecca');
 
-let sequenza = [];    // eventi costruiti dinamicamente
-let ticker   = null;  // setInterval per countdown
+let sequenza = [];    // eventi (ordinati)
+let ticker   = null;  // interval per countdown
 let startTs  = null;  // timestamp avvio
 let nextIdx  = 0;     // indice prossimo evento
-let timeouts = [];    // riferimenti setTimeout per reset
+let timeouts = [];    // per reset
 
-// mostra/nascondi opzioni bistecca in base al toggle
+// mostra/nascondi opzioni bistecca
 if (bisteccaCb && bisteccaOpts) {
   const toggleBisteccaOpts = () => {
     bisteccaOpts.classList.toggle('hidden', !bisteccaCb.checked);
   };
   bisteccaCb.addEventListener('change', toggleBisteccaOpts);
-  toggleBisteccaOpts(); // stato iniziale
+  toggleBisteccaOpts();
 }
 
 startBtn.addEventListener("click", () => {
-  // prendi le selezioni dalla checklist
   const selezioni = Array.from(document.querySelectorAll(".food:checked")).map(i => i.value);
   if (selezioni.length === 0) {
     alert("Seleziona almeno un alimento da cuocere.");
     return;
   }
 
-  // reset UI e timer precedenti
+  // reset
   logEl.innerHTML = "";
   nextEl.innerHTML = "";
-  timeouts.forEach(t => clearTimeout(t));
-  timeouts = [];
-  if (ticker) clearInterval(ticker);
+  clearAll();
 
-  // calcola la durata massima: finiremo tutto quando finisce il più lungo
   const maxDur = Math.max(...selezioni.map(n => durata(n)));
 
-  // costruisci eventi: Metti (all'offset), Gira (a metà), Togli (alla fine)
+  // costruzione eventi Metti/Gira/Togli
   const eventi = [];
   selezioni.forEach(nome => {
     const tot   = durata(nome);
-    const start = maxDur - tot;              // offset di avvio per finire insieme
-    const gira  = start + Math.round(tot/2); // metà cottura
-    const end   = start + tot;               // fine cottura
+    const start = maxDur - tot;
+    const gira  = start + Math.round(tot/2);
+    const end   = start + tot;
+
+    const flipTxt = FLIP_HINT[nome] ? ` (girare ogni ${FLIP_HINT[nome]} min)` : "";
 
     eventi.push({ tempo: start, msg: `Metti ${nome.toUpperCase()} sulla griglia (${Math.round(tot/60)} min totali)` });
-    eventi.push({ tempo: gira,  msg: `Gira ${nome.toUpperCase()}` });
+    eventi.push({ tempo: gira,  msg: `Gira ${nome.toUpperCase()}${flipTxt}` });
     eventi.push({ tempo: end,   msg: `Togli ${nome.toUpperCase()} (pronto)` });
   });
 
-  // ordina cronologicamente e aggiungi evento finale
   eventi.sort((a,b) => a.tempo - b.tempo);
   eventi.push({ tempo: maxDur, msg: "TUTTO PRONTO! Servire 🔥🍖" });
 
-  // salva sequenza e avvia scheduling
+  // salva e avvia
   sequenza = eventi;
   startTs  = Date.now();
-  nextIdx  = 0; // assicura che il primo evento mostrato sia quello a tempo 0
+  nextIdx  = 0;
 
+  // --- TIMELINE COMPLETA SUBITO ---
+  renderTimeline(sequenza);
+
+  // schedule notifiche/log + flag timeline
   sequenza.forEach((ev, i) => {
     const id = setTimeout(() => {
       aggiungiLog(ev.msg);
       avvisa(ev.msg);
-      if (i === nextIdx) nextIdx++;
+
+      // spunta nella timeline
+      const li = document.getElementById(`tl-${i}`);
+      if (li) {
+        li.classList.add('done');
+        const c = li.querySelector('input[type="checkbox"]');
+        if (c) c.checked = true;
+      }
+
       if (i === sequenza.length - 1) {
         if (ticker) clearInterval(ticker);
         aggiornaNext();
@@ -82,26 +99,47 @@ startBtn.addEventListener("click", () => {
     timeouts.push(id);
   });
 
-  // avvia/aggiorna il countdown del prossimo evento
+  // countdown
   ticker = setInterval(aggiornaNext, 250);
   aggiornaNext();
 });
 
+function renderTimeline(eventi) {
+  const list = document.getElementById('timeline-list');
+  if (!list) return;
+  list.innerHTML = "";
+  eventi.forEach((ev, i) => {
+    const li = document.createElement('li');
+    li.id = `tl-${i}`;
+
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.disabled = true;
+
+    const label = document.createElement('span');
+    label.textContent = ev.msg;
+
+    li.appendChild(cb);
+    li.appendChild(label);
+    list.appendChild(li);
+  });
+}
+
 function durata(item) {
   if (item === 'bistecca') {
     const grado = (gradoBistecca && bisteccaCb && bisteccaCb.checked) ? gradoBistecca.value : 'medium';
-    if (grado === 'rare')   return 5 * 60;   // ~5 min totali
-    if (grado === 'well')   return 10 * 60;  // ~10 min totali
-    return 8 * 60;                           // medium ~8 min totali
+    if (grado === 'rare')   return 5 * 60;
+    if (grado === 'well')   return 10 * 60;
+    return 8 * 60; // medium
   }
   return DURATE[item];
 }
 
 function aggiornaNext() {
   if (!sequenza.length || startTs === null) return;
-  const elapsed = (Date.now() - startTs) / 1000; // secondi dall'avvio
+  const elapsed = (Date.now() - startTs) / 1000;
 
-  // Trova il primo evento non ancora scattato (tempo >= elapsed)
+  // primo evento non ancora avvenuto
   let i = sequenza.findIndex(ev => ev.tempo >= elapsed);
   if (i === -1) {
     nextIdx = sequenza.length;
@@ -144,7 +182,13 @@ function formatSeconds(sec) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-// Permesso notifiche al caricamento
+function clearAll() {
+  timeouts.forEach(t => clearTimeout(t));
+  timeouts = [];
+  if (ticker) clearInterval(ticker);
+}
+
+// permessi notifiche
 if ("Notification" in window) {
   Notification.requestPermission();
 }
