@@ -1,18 +1,27 @@
 // Durate (secondi) per ogni alimento "standard"
 const DURATE = {
-  pollo:   25 * 60,  // 1500
-  costine: 20 * 60,  // 1200
-  salsicce:12 * 60,  // 720
-  pancetta: 6 * 60   // 360
+  pollo:   45 * 60,   // circa 45 min
+  costine: 75 * 60,   // circa 75 min
+  salsicce:18 * 60,   // circa 18 min
+  pancetta: 7 * 60    // circa 7 min
 };
 
-// Indizi di girata per la timeline
+// Indizi di girata per la timeline (griglia a legna - bronse)
 const FLIP_HINT = {
-  pollo: "6–8",
-  costine: "5–6",
-  salsicce: "4–5",
+  pollo: "7–10",
+  costine: "10–15",
+  salsicce: "3–4",
   pancetta: "2–3"
 };
+
+function averageRangeMinutes(str) {
+  if (!str) return null;
+  const norm = String(str).replace('–', '-');
+  const parts = norm.split('-').map(s => parseFloat(String(s).trim().replace(',', '.')));
+  if (!isFinite(parts[0])) return null;
+  if (!isFinite(parts[1])) return parts[0];
+  return (parts[0] + parts[1]) / 2;
+}
 
 // UI
 const logEl    = document.getElementById("log");
@@ -27,6 +36,7 @@ let ticker   = null;  // interval per countdown
 let startTs  = null;  // timestamp avvio
 let nextIdx  = 0;     // indice prossimo evento
 let timeouts = [];    // per reset
+let activeIdx = -1;   // indice evento evidenziato in timeline
 
 // mostra/nascondi opzioni bistecca
 if (bisteccaCb && bisteccaOpts) {
@@ -44,6 +54,9 @@ startBtn.addEventListener("click", () => {
     return;
   }
 
+  // disabilita il bottone durante l'esecuzione
+  startBtn.disabled = true;
+
   // reset
   logEl.innerHTML = "";
   nextEl.innerHTML = "";
@@ -56,18 +69,45 @@ startBtn.addEventListener("click", () => {
   selezioni.forEach(nome => {
     const tot   = durata(nome);
     const start = maxDur - tot;
-    const gira  = start + Math.round(tot/2);
     const end   = start + tot;
 
     const flipTxt = FLIP_HINT[nome] ? ` (girare ogni ${FLIP_HINT[nome]} min)` : "";
 
-    eventi.push({ tempo: start, msg: `Metti ${nome.toUpperCase()} sulla griglia (${Math.round(tot/60)} min totali)` });
-    eventi.push({ tempo: gira,  msg: `Gira ${nome.toUpperCase()}${flipTxt}` });
-    eventi.push({ tempo: end,   msg: `Togli ${nome.toUpperCase()} (pronto)` });
+    // METTI all'offset calcolato
+    eventi.push({ tempo: start, type: 'metti', msg: `Metti ${nome.toUpperCase()} sulla griglia (${Math.round(tot/60)} min totali)` });
+
+    // GIRA ripetuto: usa la media dell'intervallo (es. "7–10" -> 8.5 min)
+    const avgMin = averageRangeMinutes(FLIP_HINT[nome]);
+    const flipInterval = avgMin ? Math.round(avgMin * 60) : null; // sec
+
+    if (flipInterval && flipInterval > 0) {
+      let t = start + flipInterval;
+      // non arrivare troppo vicino alla fine: lascia almeno 30s (o 30% dell'intervallo)
+      const guard = Math.max(30, Math.round(flipInterval * 0.3));
+      while (t < end - guard) {
+        eventi.push({ tempo: t, type: 'gira', msg: `Gira ${nome.toUpperCase()}${flipTxt}` });
+        t += flipInterval;
+      }
+    } else {
+      // Fallback: una girata a metà
+      const mid = start + Math.round(tot / 2);
+      eventi.push({ tempo: mid, type: 'gira', msg: `Gira ${nome.toUpperCase()}${flipTxt}` });
+    }
+
+    // TOGLI alla fine
+    eventi.push({ tempo: end, type: 'togli', msg: `Togli ${nome.toUpperCase()} (pronto)` });
   });
 
-  eventi.sort((a,b) => a.tempo - b.tempo);
-  eventi.push({ tempo: maxDur, msg: "TUTTO PRONTO! Servire 🔥🍖" });
+  const prio = { metti: 0, gira: 1, togli: 2, finale: 3 };
+  eventi.sort((a, b) => {
+    if (a.tempo !== b.tempo) return a.tempo - b.tempo;
+    const pa = prio[a.type] ?? 99;
+    const pb = prio[b.type] ?? 99;
+    return pa - pb;
+  });
+
+  // evento finale
+  eventi.push({ tempo: maxDur, type: 'finale', msg: "TUTTO PRONTO! Servire 🔥🍖" });
 
   // salva e avvia
   sequenza = eventi;
@@ -94,6 +134,8 @@ startBtn.addEventListener("click", () => {
       if (i === sequenza.length - 1) {
         if (ticker) clearInterval(ticker);
         aggiornaNext();
+        // riabilita il bottone a fine sequenza
+        startBtn.disabled = false;
       }
     }, Math.max(0, ev.tempo) * 1000);
     timeouts.push(id);
@@ -111,6 +153,7 @@ function renderTimeline(eventi) {
   eventi.forEach((ev, i) => {
     const li = document.createElement('li');
     li.id = `tl-${i}`;
+    li.dataset.index = String(i);
 
     const cb = document.createElement('input');
     cb.type = 'checkbox';
@@ -150,6 +193,17 @@ function aggiornaNext() {
   }
   nextIdx = i;
 
+  // evidenzia l'evento prossimo in timeline
+  if (activeIdx !== nextIdx) {
+    if (activeIdx >= 0) {
+      const prev = document.getElementById(`tl-${activeIdx}`);
+      if (prev) prev.classList.remove('active');
+    }
+    const cur = document.getElementById(`tl-${nextIdx}`);
+    if (cur) cur.classList.add('active');
+    activeIdx = nextIdx;
+  }
+
   const ev = sequenza[nextIdx];
   const remaining = Math.max(0, Math.ceil(ev.tempo - elapsed));
   nextEl.innerHTML = `
@@ -168,10 +222,15 @@ function aggiungiLog(testo) {
 
 function avvisa(testo) {
   if ("Notification" in window && Notification.permission === "granted") {
-    new Notification(testo);
+    try { new Notification(testo); } catch(_){}
   }
-  const beep = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
-  beep.play().catch(() => {});
+  try {
+    const beep = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
+    beep.play().catch(() => {});
+  } catch(_){}
+  if (navigator.vibrate) {
+    try { navigator.vibrate([150, 70, 150]); } catch(_){}
+  }
 }
 
 function formatTime(date) {
