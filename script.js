@@ -1,236 +1,291 @@
-// Durate (secondi) per ogni alimento "standard"
 const DURATE = {
-  pollo:   45 * 60,   // circa 45 min
-  costine: 75 * 60,   // circa 75 min
-  salsicce:18 * 60,   // circa 18 min
-  pancetta: 7 * 60    // circa 7 min
+  pollo:    45 * 60,
+  costine:  75 * 60,
+  salsicce: 18 * 60,
+  pancetta:  7 * 60,
+  braciola: 25 * 60,
+  agnello:  15 * 60,
+  wurstel:   8 * 60,
+  spiedini: 15 * 60,
+  verdure:  15 * 60,
 };
 
-// Indizi di girata per la timeline (griglia a legna - bronse)
 const FLIP_HINT = {
-  pollo: "7–10",
-  costine: "10–15",
+  pollo:    "7–10",
+  costine:  "10–15",
   salsicce: "3–4",
-  pancetta: "2–3"
+  pancetta: "2–3",
+  braciola: "6–8",
+  agnello:  "5–6",
+  wurstel:  "2–3",
+  spiedini: "4–5",
+  verdure:  "5–6",
 };
 
-function averageRangeMinutes(str) {
-  if (!str) return null;
-  const norm = String(str).replace('–', '-');
-  const parts = norm.split('-').map(s => parseFloat(String(s).trim().replace(',', '.')));
-  if (!isFinite(parts[0])) return null;
-  if (!isFinite(parts[1])) return parts[0];
-  return (parts[0] + parts[1]) / 2;
+const NOMI = {
+  pollo: "Pollo", costine: "Costine", salsicce: "Salsicce",
+  pancetta: "Pancetta", braciola: "Braciola", agnello: "Agnello",
+  wurstel: "Wurstel", spiedini: "Spiedini", verdure: "Verdure",
+  bistecca: "Bistecca",
+};
+
+// DOM
+const logEl            = document.getElementById("log");
+const nextEl           = document.getElementById("next");
+const nextStickyEl     = document.getElementById("next-sticky");
+const startBtn         = document.getElementById("startBtn");
+const resetBtn         = document.getElementById("resetBtn");
+const bisteccaCb       = document.querySelector('input.food[value="bistecca"]');
+const bisteccaOpts     = document.getElementById('bistecca-opts');
+const gradoBistecca    = document.getElementById('grado-bistecca');
+const spessoreBistecca = document.getElementById('spessore-bistecca');
+
+// State
+let sequenza  = [];
+let ticker    = null;
+let startTs   = null;
+let timeouts  = [];
+let activeIdx = -1;
+let wakeLock  = null;
+let audioCtx  = null;
+
+// ─── Wake Lock ────────────────────────────────────────────────
+async function requestWakeLock() {
+  if (!('wakeLock' in navigator)) return;
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release', () => { wakeLock = null; });
+  } catch(_) {}
 }
 
-// UI
-const logEl    = document.getElementById("log");
-const nextEl   = document.getElementById("next");
-const startBtn = document.getElementById("startBtn");
-const bisteccaCb    = document.querySelector('input.food[value="bistecca"]');
-const bisteccaOpts  = document.getElementById('bistecca-opts');
-const gradoBistecca = document.getElementById('grado-bistecca');
-
-let sequenza = [];    // eventi (ordinati)
-let ticker   = null;  // interval per countdown
-let startTs  = null;  // timestamp avvio
-let nextIdx  = 0;     // indice prossimo evento
-let timeouts = [];    // per reset
-let activeIdx = -1;   // indice evento evidenziato in timeline
-
-// mostra/nascondi opzioni bistecca
-if (bisteccaCb && bisteccaOpts) {
-  const toggleBisteccaOpts = () => {
-    bisteccaOpts.classList.toggle('hidden', !bisteccaCb.checked);
-  };
-  bisteccaCb.addEventListener('change', toggleBisteccaOpts);
-  toggleBisteccaOpts();
+function releaseWakeLock() {
+  if (wakeLock) { wakeLock.release(); wakeLock = null; }
 }
 
-startBtn.addEventListener("click", () => {
-  const selezioni = Array.from(document.querySelectorAll(".food:checked")).map(i => i.value);
-  if (selezioni.length === 0) {
-    alert("Seleziona almeno un alimento da cuocere.");
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && startTs !== null && !wakeLock) {
+    requestWakeLock();
+  }
+});
+
+// ─── Audio (Web Audio API — nessun URL esterno) ───────────────
+function initAudio() {
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(_) {}
+  }
+}
+
+function playBeep(type) {
+  initAudio();
+  if (!audioCtx) return;
+  const freqs = { metti: 660, gira: 880, togli: 1100 };
+
+  if (type === 'finale') {
+    [523, 659, 784].forEach((f, i) => {
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.connect(g); g.connect(audioCtx.destination);
+      o.frequency.value = f;
+      const t = audioCtx.currentTime + i * 0.18;
+      g.gain.setValueAtTime(0.35, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+      o.start(t); o.stop(t + 0.5);
+    });
     return;
   }
 
-  // disabilita il bottone durante l'esecuzione
-  startBtn.disabled = true;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.frequency.value = freqs[type] || 880;
+  gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+  osc.start(audioCtx.currentTime);
+  osc.stop(audioCtx.currentTime + 0.35);
+}
 
-  // reset
+document.addEventListener('click', initAudio, { once: true });
+
+// ─── Bistecca options ─────────────────────────────────────────
+function updateBisteccaLabel() {
+  const min = Math.round(durata('bistecca') / 60);
+  const label = document.getElementById('bistecca-time-label');
+  if (label) label.textContent = `~${min} min`;
+}
+
+if (bisteccaCb && bisteccaOpts) {
+  const toggle = () => bisteccaOpts.classList.toggle('hidden', !bisteccaCb.checked);
+  bisteccaCb.addEventListener('change', toggle);
+  toggle();
+}
+if (gradoBistecca) gradoBistecca.addEventListener('change', updateBisteccaLabel);
+if (spessoreBistecca) spessoreBistecca.addEventListener('input', updateBisteccaLabel);
+
+// ─── Sticky banner ────────────────────────────────────────────
+new IntersectionObserver(([entry]) => {
+  if (startTs !== null) nextStickyEl.classList.toggle('hidden', entry.isIntersecting);
+}, { threshold: 0 }).observe(nextEl);
+
+// ─── Start ────────────────────────────────────────────────────
+startBtn.addEventListener("click", () => {
+  const selezioni = Array.from(document.querySelectorAll(".food:checked")).map(i => i.value);
+  if (selezioni.length === 0) { alert("Seleziona almeno un alimento."); return; }
+
+  initAudio();
+  startBtn.disabled = true;
+  resetBtn.classList.remove('hidden');
   logEl.innerHTML = "";
   nextEl.innerHTML = "";
   clearAll();
+  activeIdx = -1;
 
-  const maxDur = Math.max(...selezioni.map(n => durata(n)));
-
-  // costruzione eventi Metti/Gira/Togli
+  const maxDur = Math.max(...selezioni.map(durata));
   const eventi = [];
+
   selezioni.forEach(nome => {
     const tot   = durata(nome);
     const start = maxDur - tot;
     const end   = start + tot;
+    const flipTxt = FLIP_HINT[nome] ? ` (ogni ${FLIP_HINT[nome]} min)` : "";
 
-    const flipTxt = FLIP_HINT[nome] ? ` (girare ogni ${FLIP_HINT[nome]} min)` : "";
+    eventi.push({ tempo: start, type: 'metti', msg: `Metti ${NOMI[nome]} (${Math.round(tot / 60)} min)` });
 
-    // METTI all'offset calcolato
-    eventi.push({ tempo: start, type: 'metti', msg: `Metti ${nome.toUpperCase()} sulla griglia (${Math.round(tot/60)} min totali)` });
+    const avgMin = averageRange(FLIP_HINT[nome]);
+    const interval = avgMin ? Math.round(avgMin * 60) : null;
 
-    // GIRA ripetuto: usa la media dell'intervallo (es. "7–10" -> 8.5 min)
-    const avgMin = averageRangeMinutes(FLIP_HINT[nome]);
-    const flipInterval = avgMin ? Math.round(avgMin * 60) : null; // sec
-
-    if (flipInterval && flipInterval > 0) {
-      let t = start + flipInterval;
-      // non arrivare troppo vicino alla fine: lascia almeno 30s (o 30% dell'intervallo)
-      const guard = Math.max(30, Math.round(flipInterval * 0.3));
-      while (t < end - guard) {
-        eventi.push({ tempo: t, type: 'gira', msg: `Gira ${nome.toUpperCase()}${flipTxt}` });
-        t += flipInterval;
+    if (interval) {
+      const guard = Math.max(30, Math.round(interval * 0.3));
+      for (let t = start + interval; t < end - guard; t += interval) {
+        eventi.push({ tempo: t, type: 'gira', msg: `Gira ${NOMI[nome]}${flipTxt}` });
       }
     } else {
-      // Fallback: una girata a metà
-      const mid = start + Math.round(tot / 2);
-      eventi.push({ tempo: mid, type: 'gira', msg: `Gira ${nome.toUpperCase()}${flipTxt}` });
+      eventi.push({ tempo: start + Math.round(tot / 2), type: 'gira', msg: `Gira ${NOMI[nome]}` });
     }
 
-    // TOGLI alla fine
-    eventi.push({ tempo: end, type: 'togli', msg: `Togli ${nome.toUpperCase()} (pronto)` });
+    eventi.push({ tempo: end, type: 'togli', msg: `Togli ${NOMI[nome]} — pronto!` });
   });
 
   const prio = { metti: 0, gira: 1, togli: 2, finale: 3 };
-  eventi.sort((a, b) => {
-    if (a.tempo !== b.tempo) return a.tempo - b.tempo;
-    const pa = prio[a.type] ?? 99;
-    const pb = prio[b.type] ?? 99;
-    return pa - pb;
-  });
+  eventi.sort((a, b) => a.tempo !== b.tempo ? a.tempo - b.tempo : (prio[a.type] ?? 9) - (prio[b.type] ?? 9));
+  eventi.push({ tempo: maxDur, type: 'finale', msg: "TUTTO PRONTO! Servire!" });
 
-  // evento finale
-  eventi.push({ tempo: maxDur, type: 'finale', msg: "TUTTO PRONTO! Servire 🔥🍖" });
-
-  // salva e avvia
   sequenza = eventi;
   startTs  = Date.now();
-  nextIdx  = 0;
 
-  // --- TIMELINE COMPLETA SUBITO ---
   renderTimeline(sequenza);
+  requestWakeLock();
 
-  // schedule notifiche/log + flag timeline
   sequenza.forEach((ev, i) => {
     const id = setTimeout(() => {
       aggiungiLog(ev.msg);
-      avvisa(ev.msg);
+      playBeep(ev.type);
+      if (navigator.vibrate) navigator.vibrate(ev.type === 'finale' ? [200, 100, 200, 100, 400] : [150, 70, 150]);
+      sendNotifica(ev.msg);
 
-      // spunta nella timeline
       const li = document.getElementById(`tl-${i}`);
-      if (li) {
-        li.classList.add('done');
-        const c = li.querySelector('input[type="checkbox"]');
-        if (c) c.checked = true;
-      }
+      if (li) { li.classList.add('done'); li.querySelector('input[type="checkbox"]').checked = true; }
 
       if (i === sequenza.length - 1) {
-        if (ticker) clearInterval(ticker);
+        clearInterval(ticker); ticker = null;
         aggiornaNext();
-        // riabilita il bottone a fine sequenza
         startBtn.disabled = false;
+        releaseWakeLock();
       }
     }, Math.max(0, ev.tempo) * 1000);
     timeouts.push(id);
   });
 
-  // countdown
   ticker = setInterval(aggiornaNext, 250);
   aggiornaNext();
 });
 
+// ─── Reset ────────────────────────────────────────────────────
+resetBtn.addEventListener("click", () => {
+  if (!confirm("Fermare la cottura in corso?")) return;
+  clearAll();
+  startTs = null; sequenza = []; activeIdx = -1;
+  logEl.innerHTML = "";
+  nextEl.innerHTML = "";
+  nextStickyEl.classList.add('hidden');
+  document.getElementById('timeline-list').innerHTML = "";
+  startBtn.disabled = false;
+  resetBtn.classList.add('hidden');
+  releaseWakeLock();
+});
+
+// ─── Timeline render ──────────────────────────────────────────
 function renderTimeline(eventi) {
   const list = document.getElementById('timeline-list');
-  if (!list) return;
   list.innerHTML = "";
   eventi.forEach((ev, i) => {
-    const li = document.createElement('li');
-    li.id = `tl-${i}`;
-    li.dataset.index = String(i);
-
-    const cb = document.createElement('input');
-    cb.type = 'checkbox';
+    const li    = document.createElement('li');
+    li.id       = `tl-${i}`;
+    const cb    = document.createElement('input');
+    cb.type     = 'checkbox';
     cb.disabled = true;
-
-    const label = document.createElement('span');
-    // Mostra anche l'orario atteso dell'evento
-    const when = startTs ? formatTime(new Date(startTs + ev.tempo * 1000)) : "";
-    label.textContent = when ? `${when} — ${ev.msg}` : ev.msg;
-
+    const span  = document.createElement('span');
+    const when  = startTs ? formatTime(new Date(startTs + ev.tempo * 1000)) : "";
+    span.textContent = when ? `${when} — ${ev.msg}` : ev.msg;
     li.appendChild(cb);
-    li.appendChild(label);
+    li.appendChild(span);
     list.appendChild(li);
   });
 }
 
-function durata(item) {
-  if (item === 'bistecca') {
-    const grado = (gradoBistecca && bisteccaCb && bisteccaCb.checked) ? gradoBistecca.value : 'medium';
-    if (grado === 'rare')   return 5 * 60;
-    if (grado === 'well')   return 10 * 60;
-    return 8 * 60; // medium
-  }
-  return DURATE[item];
-}
-
+// ─── Countdown ────────────────────────────────────────────────
 function aggiornaNext() {
   if (!sequenza.length || startTs === null) return;
   const elapsed = (Date.now() - startTs) / 1000;
+  const i = sequenza.findIndex(ev => ev.tempo >= elapsed);
 
-  // primo evento non ancora avvenuto
-  let i = sequenza.findIndex(ev => ev.tempo >= elapsed);
   if (i === -1) {
-    nextIdx = sequenza.length;
     nextEl.innerHTML = `<span class="titolo">Prossimo evento</span><div class="tempo">Completato ✅</div>`;
+    nextStickyEl.classList.add('hidden');
     return;
   }
-  nextIdx = i;
 
-  // evidenzia l'evento prossimo in timeline
-  if (activeIdx !== nextIdx) {
-    if (activeIdx >= 0) {
-      const prev = document.getElementById(`tl-${activeIdx}`);
-      if (prev) prev.classList.remove('active');
-    }
-    const cur = document.getElementById(`tl-${nextIdx}`);
-    if (cur) cur.classList.add('active');
-    activeIdx = nextIdx;
+  if (activeIdx !== i) {
+    document.getElementById(`tl-${activeIdx}`)?.classList.remove('active');
+    document.getElementById(`tl-${i}`)?.classList.add('active');
+    activeIdx = i;
   }
 
-  const ev = sequenza[nextIdx];
+  const ev        = sequenza[i];
   const remaining = Math.max(0, Math.ceil(ev.tempo - elapsed));
-  nextEl.innerHTML = `
-    <span class="titolo">Prossimo evento</span>
-    <div>${ev.msg}</div>
-    <div class="tempo">Tra: ${formatSeconds(remaining)}</div>
-  `;
+  const html      = `<span class="titolo">Prossimo evento</span><div>${ev.msg}</div><div class="tempo">${formatSeconds(remaining)}</div>`;
+  nextEl.innerHTML = html;
+  nextStickyEl.innerHTML = `<span>${ev.msg}</span><span class="tempo">${formatSeconds(remaining)}</span>`;
 }
 
+// ─── Log ──────────────────────────────────────────────────────
 function aggiungiLog(testo) {
   const div = document.createElement("div");
   div.textContent = `${formatTime(new Date())} → ${testo}`;
-  logEl.appendChild(div);
-  logEl.scrollTop = logEl.scrollHeight;
+  logEl.prepend(div);
 }
 
-function avvisa(testo) {
+function sendNotifica(testo) {
   if ("Notification" in window && Notification.permission === "granted") {
-    try { new Notification(testo); } catch(_){}
+    try { new Notification("Griglia", { body: testo }); } catch(_) {}
   }
-  try {
-    const beep = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
-    beep.play().catch(() => {});
-  } catch(_){}
-  if (navigator.vibrate) {
-    try { navigator.vibrate([150, 70, 150]); } catch(_){}
+}
+
+// ─── Utils ────────────────────────────────────────────────────
+function durata(item) {
+  if (item === 'bistecca') {
+    const grado    = gradoBistecca ? gradoBistecca.value : 'medium';
+    const spessore = spessoreBistecca ? (parseFloat(spessoreBistecca.value) || 2.5) : 2.5;
+    const base     = grado === 'rare' ? 5 * 60 : grado === 'well' ? 10 * 60 : 8 * 60;
+    return Math.round(base * (spessore / 2.5));
   }
+  return DURATE[item] || 15 * 60;
+}
+
+function averageRange(str) {
+  if (!str) return null;
+  const parts = str.replace('–', '-').split('-').map(s => parseFloat(s.trim()));
+  if (!isFinite(parts[0])) return null;
+  return isFinite(parts[1]) ? (parts[0] + parts[1]) / 2 : parts[0];
 }
 
 function formatTime(date) {
@@ -238,18 +293,15 @@ function formatTime(date) {
 }
 
 function formatSeconds(sec) {
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
+  return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
 }
 
 function clearAll() {
-  timeouts.forEach(t => clearTimeout(t));
+  timeouts.forEach(clearTimeout);
   timeouts = [];
-  if (ticker) clearInterval(ticker);
+  if (ticker) { clearInterval(ticker); ticker = null; }
 }
 
-// permessi notifiche
-if ("Notification" in window) {
+if ("Notification" in window && Notification.permission === "default") {
   Notification.requestPermission();
 }
