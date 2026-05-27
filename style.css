@@ -9,10 +9,7 @@ body {
   max-width: 600px;
 }
 
-header {
-  text-align: center;
-  margin-bottom: 16px;
-}
+header { text-align: center; margin-bottom: 16px; }
 
 h1 {
   color: #b33;
@@ -20,13 +17,9 @@ h1 {
   margin: 0 0 6px;
 }
 
-.subtitle {
-  color: #666;
-  font-size: 14px;
-  margin: 0;
-}
+.subtitle { color: #666; font-size: 14px; margin: 0; }
 
-/* ─── Food grid ─────────────────────────────────────────────── */
+/* ─── Scelta ──────────────────────────────────────────────── */
 #scelta {
   background: #fff7f2;
   border: 2px dashed #b33;
@@ -35,15 +28,27 @@ h1 {
   margin-bottom: 12px;
 }
 
-#scelta h2 {
-  margin: 0 0 12px;
-  font-size: 17px;
+#scelta h2 { margin: 0 0 12px; font-size: 17px; color: #b33; }
+
+/* ─── Category labels ────────────────────────────────────── */
+.cat-label {
+  grid-column: 1 / -1;
+  font-weight: bold;
+  font-size: 12px;
   color: #b33;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 8px 0 4px;
+  border-bottom: 1px solid #e8cfc8;
+  margin-top: 4px;
 }
 
+.cat-label:first-child { margin-top: 0; padding-top: 0; }
+
+/* ─── Food grid ──────────────────────────────────────────── */
 .food-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
   gap: 8px;
   margin-bottom: 12px;
 }
@@ -52,8 +57,8 @@ h1 {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
-  padding: 10px 6px;
+  gap: 2px;
+  padding: 10px 6px 8px;
   background: white;
   border: 2px solid #ddd;
   border-radius: 10px;
@@ -63,14 +68,15 @@ h1 {
   justify-content: center;
   position: relative;
   -webkit-tap-highlight-color: transparent;
+  user-select: none;
 }
 
 .food-card input[type="checkbox"] {
   position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 16px;
-  height: 16px;
+  top: 5px;
+  right: 5px;
+  width: 15px;
+  height: 15px;
   cursor: pointer;
   accent-color: #b33;
 }
@@ -80,13 +86,14 @@ h1 {
   background: #fff0ee;
 }
 
-.food-card:active { transform: scale(0.94); }
+.food-card:active { transform: scale(0.93); }
 
-.food-icon { font-size: 26px; line-height: 1; }
-.food-name { font-size: 12px; font-weight: bold; text-align: center; }
-.food-time { font-size: 11px; color: #b33; }
+.food-icon  { font-size: 24px; line-height: 1; }
+.food-name  { font-size: 11px; font-weight: bold; text-align: center; line-height: 1.2; }
+.food-time  { font-size: 11px; color: #b33; }
+.food-note  { font-size: 9px; color: #888; font-style: italic; }
 
-/* ─── Bistecca opts ──────────────────────────────────────────── */
+/* ─── Bistecca opts ──────────────────────────────────────── */
 #bistecca-opts {
   background: #fff0ee;
   border: 1px dashed #b33;
@@ -95,11 +102,7 @@ h1 {
   margin: 6px 0 0;
 }
 
-.bistecca-row {
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
-}
+.bistecca-row { display: flex; gap: 20px; flex-wrap: wrap; }
 
 .bistecca-row label {
   display: flex;
@@ -118,15 +121,10 @@ h1 {
   font-family: inherit;
 }
 
-.thickness-input {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
+.thickness-input { display: flex; align-items: center; gap: 6px; }
+.thickness-input input { width: 70px; }
 
-.thickness-input input { width: 72px; }
-
-/* ─── Buttons ────────────────────────────────────────────────── */
+/* ─── Buttons ────────────────────────────────────────────── */
 .btn-row {
   display: flex;
   gap: 10px;
@@ -154,7 +152,7 @@ button:hover { transform: translateY(-2px); box-shadow: 0 5px 12px rgba(0,0,0,0.
 button:active { transform: translateY(0); }
 button:disabled { opacity: 0.45; cursor: default; transform: none; }
 
-/* ─── Sticky banner ──────────────────────────────────────────── */
+/* ─── Sticky banner ──────────────────────────────────────── */
 #next-sticky {
   position: fixed;
   top: 0; left: 0; right: 0;
@@ -176,7 +174,7 @@ button:disabled { opacity: 0.45; cursor: default; transform: none; }
   white-space: nowrap;
 }
 
-/* ─── Next event card ────────────────────────────────────────── */
+/* ─── Next event card ────────────────────────────────────── */
 #next {
   background: white;
   border: 2px solid #b33;
@@ -206,7 +204,7 @@ button:disabled { opacity: 0.45; cursor: default; transform: none; }
   font-family: monospace;
 }
 
-/* ─── Timeline ───────────────────────────────────────────────── */
+/* ─── Timeline ───────────────────────────────────────────── */
 #timeline {
   background: white;
   border: 2px solid #b33;
@@ -215,17 +213,9 @@ button:disabled { opacity: 0.45; cursor: default; transform: none; }
   margin: 12px 0;
 }
 
-#timeline h2 {
-  margin: 0 0 10px;
-  font-size: 17px;
-  color: #b33;
-}
+#timeline h2 { margin: 0 0 10px; font-size: 17px; color: #b33; }
 
-#timeline-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
+#timeline-list { list-style: none; padding: 0; margin: 0; }
 
 #timeline-list li {
   padding: 9px 10px 9px 12px;
@@ -265,7 +255,7 @@ button:disabled { opacity: 0.45; cursor: default; transform: none; }
   cursor: default;
 }
 
-/* ─── Log ────────────────────────────────────────────────────── */
+/* ─── Log ────────────────────────────────────────────────── */
 #log {
   margin: 12px 0;
   font-size: 14px;
@@ -276,15 +266,10 @@ button:disabled { opacity: 0.45; cursor: default; transform: none; }
 }
 
 #log:empty { display: none; }
-
-#log div {
-  padding: 4px 0;
-  border-bottom: 1px solid #eee;
-}
-
+#log div { padding: 4px 0; border-bottom: 1px solid #eee; }
 #log div:last-child { border-bottom: none; }
 
-/* ─── Utils ──────────────────────────────────────────────────── */
+/* ─── Utils ──────────────────────────────────────────────── */
 .hidden { display: none !important; }
 
 .hint {
@@ -294,18 +279,18 @@ button:disabled { opacity: 0.45; cursor: default; transform: none; }
   font-style: italic;
 }
 
-/* ─── Animations ─────────────────────────────────────────────── */
+/* ─── Animations ─────────────────────────────────────────── */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-3px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ─── Mobile ─────────────────────────────────────────────────── */
+/* ─── Mobile ─────────────────────────────────────────────── */
 @media (max-width: 380px) {
   body { padding: 10px; }
   .food-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; }
-  .food-card { min-height: 72px; padding: 8px 4px; }
-  .food-icon { font-size: 22px; }
+  .food-card { min-height: 72px; padding: 8px 4px 6px; }
+  .food-icon { font-size: 20px; }
   .food-name { font-size: 10px; }
   button { font-size: 15px; padding: 12px 18px; }
   #next .tempo { font-size: 28px; }
