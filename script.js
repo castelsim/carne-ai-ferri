@@ -202,7 +202,8 @@ startBtn.addEventListener("click", () => {
     const end      = start + tot;
     const flipTxt  = FLIP_HINT[nome] ? ` (ogni ${FLIP_HINT[nome]} min)` : "";
 
-    eventi.push({ tempo: start, type: 'metti', msg: `Metti ${NOMI[nome]} (${Math.round(tot / 60)} min)` });
+    const label = NOMI[nome] || nome;
+    eventi.push({ tempo: start, type: 'metti', msg: `Metti ${label} (${Math.round(tot / 60)} min)` });
 
     const avgMin     = averageRange(FLIP_HINT[nome]);
     const interval   = avgMin ? Math.round(avgMin * 60) : null;
@@ -210,13 +211,13 @@ startBtn.addEventListener("click", () => {
     if (interval) {
       const guard = Math.max(30, Math.round(interval * 0.3));
       for (let t = start + interval; t < end - guard; t += interval) {
-        eventi.push({ tempo: t, type: 'gira', msg: `Gira ${NOMI[nome]}${flipTxt}` });
+        eventi.push({ tempo: t, type: 'gira', msg: `Gira ${label}${flipTxt}` });
       }
     } else {
-      eventi.push({ tempo: start + Math.round(tot / 2), type: 'gira', msg: `Gira ${NOMI[nome]}` });
+      eventi.push({ tempo: start + Math.round(tot / 2), type: 'gira', msg: `Gira ${label}` });
     }
 
-    eventi.push({ tempo: end, type: 'togli', msg: `Togli ${NOMI[nome]} — pronto!` });
+    eventi.push({ tempo: end, type: 'togli', msg: `Togli ${label} — pronto!` });
   });
 
   const prio = { metti: 0, gira: 1, togli: 2, finale: 3 };
