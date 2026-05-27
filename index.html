@@ -9,9 +9,7 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <noscript>
-    <p style="color:red; font-weight:bold;">Questa applicazione richiede JavaScript attivo.</p>
-  </noscript>
+  <noscript><p style="color:red;font-weight:bold;">Questa applicazione richiede JavaScript attivo.</p></noscript>
 
   <header>
     <h1>Carne ai ferri</h1>
@@ -20,68 +18,44 @@
 
   <div id="scelta">
     <h2>Cosa vuoi cuocere?</h2>
-
     <div class="food-grid">
-      <label class="food-card">
-        <input type="checkbox" class="food" value="pollo" checked>
-        <span class="food-icon">🍗</span>
-        <span class="food-name">Pollo</span>
-        <span class="food-time">45 min</span>
-      </label>
-      <label class="food-card">
-        <input type="checkbox" class="food" value="costine">
-        <span class="food-icon">🦴</span>
-        <span class="food-name">Costine</span>
-        <span class="food-time">75 min</span>
-      </label>
-      <label class="food-card">
-        <input type="checkbox" class="food" value="salsicce">
-        <span class="food-icon">🌭</span>
-        <span class="food-name">Salsicce</span>
-        <span class="food-time">18 min</span>
-      </label>
-      <label class="food-card">
-        <input type="checkbox" class="food" value="pancetta" checked>
-        <span class="food-icon">🥓</span>
-        <span class="food-name">Pancetta</span>
-        <span class="food-time">7 min</span>
-      </label>
-      <label class="food-card">
-        <input type="checkbox" class="food" value="braciola">
-        <span class="food-icon">🥩</span>
-        <span class="food-name">Braciola</span>
-        <span class="food-time">25 min</span>
-      </label>
-      <label class="food-card">
-        <input type="checkbox" class="food" value="agnello">
-        <span class="food-icon">🐑</span>
-        <span class="food-name">Agnello</span>
-        <span class="food-time">15 min</span>
-      </label>
-      <label class="food-card">
-        <input type="checkbox" class="food" value="wurstel">
-        <span class="food-icon">🌭</span>
-        <span class="food-name">Wurstel</span>
-        <span class="food-time">8 min</span>
-      </label>
-      <label class="food-card">
-        <input type="checkbox" class="food" value="spiedini">
-        <span class="food-icon">🍢</span>
-        <span class="food-name">Spiedini</span>
-        <span class="food-time">15 min</span>
-      </label>
-      <label class="food-card">
-        <input type="checkbox" class="food" value="verdure">
-        <span class="food-icon">🥦</span>
-        <span class="food-name">Verdure</span>
-        <span class="food-time">15 min</span>
-      </label>
-      <label class="food-card" id="bistecca-card">
-        <input type="checkbox" class="food" value="bistecca">
-        <span class="food-icon">🥩</span>
-        <span class="food-name">Bistecca</span>
-        <span class="food-time" id="bistecca-time-label">~8 min</span>
-      </label>
+
+      <div class="cat-label">🐄 Manzo</div>
+      <label class="food-card"><input type="checkbox" class="food" value="hamburger"><span class="food-icon">🍔</span><span class="food-name">Hamburger</span><span class="food-time">10 min</span></label>
+      <label class="food-card"><input type="checkbox" class="food" value="tagliata"><span class="food-icon">🥩</span><span class="food-name">Tagliata</span><span class="food-time">5 min</span></label>
+      <label class="food-card"><input type="checkbox" class="food" value="spiedini_manzo"><span class="food-icon">🍢</span><span class="food-name">Spiedini manzo</span><span class="food-time">10 min</span></label>
+      <label class="food-card" id="bistecca-card"><input type="checkbox" class="food" value="bistecca"><span class="food-icon">🥩</span><span class="food-name">Bistecca</span><span class="food-time" id="bistecca-time-label">~8 min</span></label>
+
+      <div class="cat-label">🐷 Maiale</div>
+      <label class="food-card"><input type="checkbox" class="food" value="salsiccia" checked><span class="food-icon">🌭</span><span class="food-name">Salsiccia</span><span class="food-time">18 min</span></label>
+      <label class="food-card"><input type="checkbox" class="food" value="luganega"><span class="food-icon">🌭</span><span class="food-name">Luganega</span><span class="food-time">12 min</span></label>
+      <label class="food-card"><input type="checkbox" class="food" value="costoletta"><span class="food-icon">🥩</span><span class="food-name">Costoletta</span><span class="food-time">20 min</span></label>
+      <label class="food-card"><input type="checkbox" class="food" value="braciola"><span class="food-icon">🥩</span><span class="food-name">Braciola</span><span class="food-time">7 min</span></label>
+      <label class="food-card"><input type="checkbox" class="food" value="pancetta" checked><span class="food-icon">🥓</span><span class="food-name">Pancetta</span><span class="food-time">6 min</span></label>
+      <label class="food-card"><input type="checkbox" class="food" value="wurstel"><span class="food-icon">🌭</span><span class="food-name">Wurstel</span><span class="food-time">8 min</span></label>
+      <label class="food-card"><input type="checkbox" class="food" value="costine"><span class="food-icon">🦴</span><span class="food-name">Costine</span><span class="food-time">90 min</span><span class="food-note">indiretto</span></label>
+
+      <div class="cat-label">🐔 Pollo</div>
+      <label class="food-card"><input type="checkbox" class="food" value="petto_pollo"><span class="food-icon">🍗</span><span class="food-name">Petto</span><span class="food-time">12 min</span></label>
+      <label class="food-card"><input type="checkbox" class="food" value="coscia_pollo"><span class="food-icon">🍗</span><span class="food-name">Coscia</span><span class="food-time">40 min</span></label>
+      <label class="food-card"><input type="checkbox" class="food" value="ali_pollo"><span class="food-icon">🍗</span><span class="food-name">Ali</span><span class="food-time">28 min</span></label>
+
+      <div class="cat-label">🐑 Agnello</div>
+      <label class="food-card"><input type="checkbox" class="food" value="costolette_agnello"><span class="food-icon">🥩</span><span class="food-name">Costolette</span><span class="food-time">8 min</span></label>
+      <label class="food-card"><input type="checkbox" class="food" value="spiedini_agnello"><span class="food-icon">🍢</span><span class="food-name">Spiedini agnello</span><span class="food-time">12 min</span></label>
+
+      <div class="cat-label">🐟 Pesce & Mare</div>
+      <label class="food-card"><input type="checkbox" class="food" value="salmone"><span class="food-icon">🐟</span><span class="food-name">Salmone</span><span class="food-time">8 min</span></label>
+      <label class="food-card"><input type="checkbox" class="food" value="gamberoni"><span class="food-icon">🦐</span><span class="food-name">Gamberoni</span><span class="food-time">5 min</span></label>
+      <label class="food-card"><input type="checkbox" class="food" value="spada"><span class="food-icon">🐠</span><span class="food-name">Spada / Tonno</span><span class="food-time">8 min</span></label>
+      <label class="food-card"><input type="checkbox" class="food" value="branzino"><span class="food-icon">🐟</span><span class="food-name">Branzino / Orata</span><span class="food-time">25 min</span><span class="food-note">indiretto</span></label>
+
+      <div class="cat-label">🥦 Verdure</div>
+      <label class="food-card"><input type="checkbox" class="food" value="zucchine"><span class="food-icon">🥒</span><span class="food-name">Zucchine</span><span class="food-time">8 min</span></label>
+      <label class="food-card"><input type="checkbox" class="food" value="peperoni"><span class="food-icon">🫑</span><span class="food-name">Peperoni</span><span class="food-time">12 min</span></label>
+      <label class="food-card"><input type="checkbox" class="food" value="mais"><span class="food-icon">🌽</span><span class="food-name">Mais</span><span class="food-time">18 min</span></label>
+      <label class="food-card"><input type="checkbox" class="food" value="funghi"><span class="food-icon">🍄</span><span class="food-name">Funghi</span><span class="food-time">10 min</span></label>
+
     </div>
 
     <div id="bistecca-opts" class="hidden">
@@ -102,7 +76,7 @@
       </div>
     </div>
 
-    <p class="hint">Suggerimento: seleziona solo ciò che cucini. L'app parte dal pezzo più lungo e sincronizza gli altri per finire insieme.</p>
+    <p class="hint">Suggerimento: seleziona solo ciò che cucini. L'app parte dal pezzo più lungo e sincronizza gli altri per finire insieme. I tagli "indiretto" richiedono calore indiretto con coperchio chiuso.</p>
   </div>
 
   <div class="btn-row">
