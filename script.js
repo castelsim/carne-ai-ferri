@@ -1,32 +1,88 @@
+// Tempi verificati da: Weber IT, Cookist, Il Giornale del Cibo, PassioneBBQ, MissVickie
 const DURATE = {
-  pollo:    45 * 60,
-  costine:  75 * 60,
-  salsicce: 18 * 60,
-  pancetta:  7 * 60,
-  braciola: 25 * 60,
-  agnello:  15 * 60,
-  wurstel:   8 * 60,
-  spiedini: 15 * 60,
-  verdure:  15 * 60,
+  // Manzo
+  hamburger:           10 * 60,  // 4-5 min per lato, T_interna 71°C
+  tagliata:             5 * 60,  // 2-3 min per lato (taglio sottile ~1cm)
+  spiedini_manzo:      10 * 60,  // girare ogni 3 min
+  // Maiale
+  salsiccia:           18 * 60,  // 15-20 min
+  luganega:            12 * 60,  // salsiccia sottile, 10-15 min
+  costoletta:          20 * 60,  // ~2cm, 8-10 min per lato
+  braciola:             7 * 60,  // sottile ~1cm, 3-4 min per lato
+  pancetta:             6 * 60,  // 2-3 min per lato
+  wurstel:              8 * 60,  // 6-10 min
+  costine:             90 * 60,  // baby back ribs, fuoco indiretto (Weber: 90 min a 150°C)
+  // Pollo
+  petto_pollo:         12 * 60,  // 5-6 min per lato, T_interna 74°C
+  coscia_pollo:        40 * 60,  // 35-45 min indiretto + 5 min diretto finale
+  ali_pollo:           28 * 60,  // 25-30 min
+  // Agnello
+  costolette_agnello:   8 * 60,  // 3-4 min per lato
+  spiedini_agnello:    12 * 60,  // 10-14 min, girare ogni 3 min
+  // Pesce & Mare
+  salmone:              8 * 60,  // filetto 3-4 min per lato (2-3cm)
+  gamberoni:            5 * 60,  // 2-3 min per lato
+  spada:                8 * 60,  // trancio ~2cm, 3-4 min per lato
+  branzino:            25 * 60,  // intero, 10-15 min per lato (fuoco indiretto)
+  // Verdure
+  zucchine:             8 * 60,  // a fette, 3-5 min per lato
+  peperoni:            12 * 60,  // a falde, girare ogni 4 min
+  mais:                18 * 60,  // intero, girare ogni 4-5 min
+  funghi:              10 * 60,  // 4-5 min per lato
 };
 
+// null = singola girata a metà cottura; stringa = intervallo minuti
 const FLIP_HINT = {
-  pollo:    "7–10",
-  costine:  "10–15",
-  salsicce: "3–4",
-  pancetta: "2–3",
-  braciola: "6–8",
-  agnello:  "5–6",
-  wurstel:  "2–3",
-  spiedini: "4–5",
-  verdure:  "5–6",
+  hamburger:           null,
+  tagliata:            null,
+  spiedini_manzo:      "3",
+  salsiccia:           "4–5",
+  luganega:            "3–4",
+  costoletta:          "6–8",
+  braciola:            null,
+  pancetta:            "2–3",
+  wurstel:             "2–3",
+  costine:             "20–25",
+  petto_pollo:         null,
+  coscia_pollo:        "10–12",
+  ali_pollo:           "7–8",
+  costolette_agnello:  null,
+  spiedini_agnello:    "3",
+  salmone:             null,
+  gamberoni:           null,
+  spada:               null,
+  branzino:            "10–12",
+  zucchine:            null,
+  peperoni:            "4",
+  mais:                "4–5",
+  funghi:              null,
 };
 
 const NOMI = {
-  pollo: "Pollo", costine: "Costine", salsicce: "Salsicce",
-  pancetta: "Pancetta", braciola: "Braciola", agnello: "Agnello",
-  wurstel: "Wurstel", spiedini: "Spiedini", verdure: "Verdure",
-  bistecca: "Bistecca",
+  hamburger:           "Hamburger",
+  tagliata:            "Tagliata",
+  spiedini_manzo:      "Spiedini di manzo",
+  salsiccia:           "Salsiccia",
+  luganega:            "Luganega",
+  costoletta:          "Costoletta",
+  braciola:            "Braciola",
+  pancetta:            "Pancetta",
+  wurstel:             "Wurstel",
+  costine:             "Costine",
+  petto_pollo:         "Petto di pollo",
+  coscia_pollo:        "Coscia/sovracoscia",
+  ali_pollo:           "Ali di pollo",
+  costolette_agnello:  "Costolette di agnello",
+  spiedini_agnello:    "Spiedini di agnello",
+  salmone:             "Salmone",
+  gamberoni:           "Gamberoni",
+  spada:               "Spada/Tonno",
+  branzino:            "Branzino/Orata",
+  zucchine:            "Zucchine",
+  peperoni:            "Peperoni",
+  mais:                "Mais",
+  funghi:              "Funghi",
+  bistecca:            "Bistecca",
 };
 
 // DOM
@@ -68,7 +124,7 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
-// ─── Audio (Web Audio API — nessun URL esterno) ───────────────
+// ─── Audio (Web Audio API) ────────────────────────────────────
 function initAudio() {
   if (!audioCtx) {
     try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(_) {}
@@ -78,8 +134,6 @@ function initAudio() {
 function playBeep(type) {
   initAudio();
   if (!audioCtx) return;
-  const freqs = { metti: 660, gira: 880, togli: 1100 };
-
   if (type === 'finale') {
     [523, 659, 784].forEach((f, i) => {
       const o = audioCtx.createOscillator();
@@ -93,7 +147,7 @@ function playBeep(type) {
     });
     return;
   }
-
+  const freqs = { metti: 660, gira: 880, togli: 1100 };
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
   osc.connect(gain); gain.connect(audioCtx.destination);
@@ -106,7 +160,7 @@ function playBeep(type) {
 
 document.addEventListener('click', initAudio, { once: true });
 
-// ─── Bistecca options ─────────────────────────────────────────
+// ─── Bistecca ─────────────────────────────────────────────────
 function updateBisteccaLabel() {
   const min = Math.round(durata('bistecca') / 60);
   const label = document.getElementById('bistecca-time-label');
@@ -143,15 +197,15 @@ startBtn.addEventListener("click", () => {
   const eventi = [];
 
   selezioni.forEach(nome => {
-    const tot   = durata(nome);
-    const start = maxDur - tot;
-    const end   = start + tot;
-    const flipTxt = FLIP_HINT[nome] ? ` (ogni ${FLIP_HINT[nome]} min)` : "";
+    const tot      = durata(nome);
+    const start    = maxDur - tot;
+    const end      = start + tot;
+    const flipTxt  = FLIP_HINT[nome] ? ` (ogni ${FLIP_HINT[nome]} min)` : "";
 
     eventi.push({ tempo: start, type: 'metti', msg: `Metti ${NOMI[nome]} (${Math.round(tot / 60)} min)` });
 
-    const avgMin = averageRange(FLIP_HINT[nome]);
-    const interval = avgMin ? Math.round(avgMin * 60) : null;
+    const avgMin     = averageRange(FLIP_HINT[nome]);
+    const interval   = avgMin ? Math.round(avgMin * 60) : null;
 
     if (interval) {
       const guard = Math.max(30, Math.round(interval * 0.3));
@@ -213,21 +267,19 @@ resetBtn.addEventListener("click", () => {
   releaseWakeLock();
 });
 
-// ─── Timeline render ──────────────────────────────────────────
+// ─── Timeline ─────────────────────────────────────────────────
 function renderTimeline(eventi) {
   const list = document.getElementById('timeline-list');
   list.innerHTML = "";
   eventi.forEach((ev, i) => {
-    const li    = document.createElement('li');
-    li.id       = `tl-${i}`;
-    const cb    = document.createElement('input');
-    cb.type     = 'checkbox';
-    cb.disabled = true;
-    const span  = document.createElement('span');
-    const when  = startTs ? formatTime(new Date(startTs + ev.tempo * 1000)) : "";
+    const li = document.createElement('li');
+    li.id = `tl-${i}`;
+    const cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.disabled = true;
+    const span = document.createElement('span');
+    const when = startTs ? formatTime(new Date(startTs + ev.tempo * 1000)) : "";
     span.textContent = when ? `${when} — ${ev.msg}` : ev.msg;
-    li.appendChild(cb);
-    li.appendChild(span);
+    li.appendChild(cb); li.appendChild(span);
     list.appendChild(li);
   });
 }
@@ -257,7 +309,6 @@ function aggiornaNext() {
   nextStickyEl.innerHTML = `<span>${ev.msg}</span><span class="tempo">${formatSeconds(remaining)}</span>`;
 }
 
-// ─── Log ──────────────────────────────────────────────────────
 function aggiungiLog(testo) {
   const div = document.createElement("div");
   div.textContent = `${formatTime(new Date())} → ${testo}`;
