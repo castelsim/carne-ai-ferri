@@ -2,45 +2,122 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <meta name="theme-color" content="#b33">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <title>Carne ai ferri</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <noscript>
-    <p style="color:red; font-weight:bold;">Questa applicazione richiede JavaScript attivo per funzionare correttamente.</p>
+    <p style="color:red; font-weight:bold;">Questa applicazione richiede JavaScript attivo.</p>
   </noscript>
-  <h1>Carne ai ferri</h1>
-  <p>Seleziona cosa cucini, poi premi Avvia: l'app sincronizza gli avvii per finire tutto insieme e ti dirà quando <em>mettere</em>, <em>girare</em> e <em>togliere</em>.</p>
+
+  <header>
+    <h1>Carne ai ferri</h1>
+    <p class="subtitle">Seleziona cosa cucini — l'app sincronizza tutto per finire insieme.</p>
+  </header>
 
   <div id="scelta">
     <h2>Cosa vuoi cuocere?</h2>
-    <label><input type="checkbox" class="food" value="pollo" checked> Pollo (45 min) — girare ogni 7–10 min</label>
-    <label><input type="checkbox" class="food" value="costine"> Costine (75 min) — girare ogni 10–15 min</label>
-    <label><input type="checkbox" class="food" value="salsicce"> Salsicce (18 min) — girare ogni 3–4 min</label>
-    <label><input type="checkbox" class="food" value="pancetta" checked> Pancetta (7 min) — girare ogni 2–3 min</label>
-    <label><input type="checkbox" class="food" value="bistecca"> Bistecca di manzo (spessore ~2.5 cm)</label>
-    <div id="bistecca-opts" class="opts hidden">
-      <label>Grado:
-        <select id="grado-bistecca">
-          <option value="rare" selected>Al sangue (tot ~5 min)</option>
-          <option value="medium">Media (tot ~8 min)</option>
-          <option value="well">Ben cotta (tot ~10 min)</option>
-        </select>
+
+    <div class="food-grid">
+      <label class="food-card">
+        <input type="checkbox" class="food" value="pollo" checked>
+        <span class="food-icon">🍗</span>
+        <span class="food-name">Pollo</span>
+        <span class="food-time">45 min</span>
       </label>
-      <p class="hint">Tempi indicativi per bistecche ~2.5 cm. Per spessori diversi i tempi variano.</p>
+      <label class="food-card">
+        <input type="checkbox" class="food" value="costine">
+        <span class="food-icon">🦴</span>
+        <span class="food-name">Costine</span>
+        <span class="food-time">75 min</span>
+      </label>
+      <label class="food-card">
+        <input type="checkbox" class="food" value="salsicce">
+        <span class="food-icon">🌭</span>
+        <span class="food-name">Salsicce</span>
+        <span class="food-time">18 min</span>
+      </label>
+      <label class="food-card">
+        <input type="checkbox" class="food" value="pancetta" checked>
+        <span class="food-icon">🥓</span>
+        <span class="food-name">Pancetta</span>
+        <span class="food-time">7 min</span>
+      </label>
+      <label class="food-card">
+        <input type="checkbox" class="food" value="braciola">
+        <span class="food-icon">🥩</span>
+        <span class="food-name">Braciola</span>
+        <span class="food-time">25 min</span>
+      </label>
+      <label class="food-card">
+        <input type="checkbox" class="food" value="agnello">
+        <span class="food-icon">🐑</span>
+        <span class="food-name">Agnello</span>
+        <span class="food-time">15 min</span>
+      </label>
+      <label class="food-card">
+        <input type="checkbox" class="food" value="wurstel">
+        <span class="food-icon">🌭</span>
+        <span class="food-name">Wurstel</span>
+        <span class="food-time">8 min</span>
+      </label>
+      <label class="food-card">
+        <input type="checkbox" class="food" value="spiedini">
+        <span class="food-icon">🍢</span>
+        <span class="food-name">Spiedini</span>
+        <span class="food-time">15 min</span>
+      </label>
+      <label class="food-card">
+        <input type="checkbox" class="food" value="verdure">
+        <span class="food-icon">🥦</span>
+        <span class="food-name">Verdure</span>
+        <span class="food-time">15 min</span>
+      </label>
+      <label class="food-card" id="bistecca-card">
+        <input type="checkbox" class="food" value="bistecca">
+        <span class="food-icon">🥩</span>
+        <span class="food-name">Bistecca</span>
+        <span class="food-time" id="bistecca-time-label">~8 min</span>
+      </label>
     </div>
-    <p class="hint">Suggerimento: seleziona solo ciò che cucini davvero. L'app parte dal pezzo con cottura più lunga e sincronizza gli altri per finire insieme.</p>
+
+    <div id="bistecca-opts" class="hidden">
+      <div class="bistecca-row">
+        <label>Cottura:
+          <select id="grado-bistecca">
+            <option value="rare">Al sangue</option>
+            <option value="medium" selected>Media</option>
+            <option value="well">Ben cotta</option>
+          </select>
+        </label>
+        <label>Spessore:
+          <div class="thickness-input">
+            <input type="number" id="spessore-bistecca" min="1" max="6" step="0.5" value="2.5">
+            <span>cm</span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <p class="hint">Suggerimento: seleziona solo ciò che cucini. L'app parte dal pezzo più lungo e sincronizza gli altri per finire insieme.</p>
   </div>
 
-  <button id="startBtn" type="button">Avvia Scaletta</button>
+  <div class="btn-row">
+    <button id="startBtn" type="button">▶ Avvia</button>
+    <button id="resetBtn" type="button" class="secondary hidden">⏹ Ferma</button>
+  </div>
 
+  <div id="next-sticky" class="hidden" aria-live="polite"></div>
   <div id="next" aria-live="polite"></div>
+
   <div id="timeline">
     <h2>Timeline</h2>
     <ol id="timeline-list"></ol>
   </div>
+
   <div id="log"></div>
 
   <script src="script.js"></script>
