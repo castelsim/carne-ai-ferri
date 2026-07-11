@@ -85,14 +85,66 @@ h2 {
   .food-grid { grid-template-columns: repeat(3, 1fr); }
 }
 
-.cat-label {
-  grid-column: 1 / -1;
-  font-weight: 700;
-  font-size: 1.02rem;
-  margin: 14px 0 2px;
-  padding-bottom: 4px;
-  border-bottom: 2px solid var(--bordo);
+/* ---------------- Ricerca ---------------- */
+.search-row { margin-bottom: 14px; }
+
+#search {
+  width: 100%;
+  font-size: 1.05rem;
+  padding: 12px 14px;
+  border: 2px solid var(--bordo);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--testo);
 }
+
+#search:focus { outline: none; border-color: var(--accento); }
+
+/* ---------------- Accordion categorie ---------------- */
+.nascosta { display: none !important; }
+
+.cat-acc {
+  margin-bottom: 10px;
+  border: 2px solid var(--bordo);
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: var(--ombra);
+  overflow: hidden;
+}
+
+.cat-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 16px;
+  border: none;
+  background: none;
+  font: inherit;
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: var(--testo);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cat-titolo { flex: 1; text-align: left; }
+
+.cat-count {
+  font-size: .78rem;
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--bordo);
+  border-radius: 999px;
+  padding: 2px 10px;
+}
+
+.cat-chev { color: var(--muted); transition: transform .15s; }
+.cat-acc.open .cat-chev { transform: rotate(180deg); }
+
+.cat-body { display: none; padding: 0 12px 12px; }
+.cat-acc.open .cat-body { display: block; }
 
 .food-card {
   position: relative;
@@ -206,6 +258,104 @@ h2 {
 
 .item-opts input { width: 70px; }
 .thickness-input { display: inline-flex; align-items: center; gap: 4px; }
+
+/* ---------------- Carrello + quantità ---------------- */
+.quantita-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+  margin: 10px 0 14px;
+}
+
+.quantita-row label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: .92rem;
+}
+
+.quantita-row input,
+.quantita-row select {
+  font-size: 1rem;
+  padding: 8px 10px;
+  border: 2px solid var(--bordo);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--testo);
+}
+
+.quantita-row input { width: 64px; }
+
+.car-lista {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+  border: 2px solid var(--bordo);
+  border-radius: 12px;
+  background: var(--card);
+  overflow: hidden;
+}
+
+.car-lista li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--bordo);
+  font-size: .95rem;
+}
+
+.car-lista li:last-child { border-bottom: none; }
+
+.car-icona { flex: none; font-size: 1.2rem; }
+.car-nome  { flex: 1; font-weight: 700; }
+
+.car-qta {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--accento-scuro);
+  text-align: right;
+}
+
+.car-qta em { font-weight: 400; font-style: normal; color: var(--muted); }
+
+.car-x {
+  flex: none;
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  border: 2px solid var(--bordo);
+  background: #fff;
+  color: var(--muted);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.car-x:hover { border-color: #b91c1c; color: #b91c1c; }
+
+.car-contorni { background: var(--bg); }
+
+.car-totale {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  background: var(--giallo-bg);
+  border: 1px dashed var(--accento);
+  border-radius: 10px;
+  font-size: .92rem;
+}
+
+#copia-lista {
+  padding: 12px 18px;
+  font-size: 1rem;
+  font-weight: 700;
+  border: 2px solid var(--accento);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--accento-scuro);
+  cursor: pointer;
+}
+
+#copia-lista:hover { background: var(--giallo-bg); }
 
 /* ---------------- Piano di preparazione ---------------- */
 .pronto-row {

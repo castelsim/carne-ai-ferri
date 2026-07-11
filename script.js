@@ -22,12 +22,14 @@
    ================================================================ */
 
 const CATEGORIE = [
-  { id: "manzo",   nome: "Manzo",        icona: "🐄" },
-  { id: "maiale",  nome: "Maiale",       icona: "🐷" },
-  { id: "pollo",   nome: "Pollo",        icona: "🐔" },
-  { id: "agnello", nome: "Agnello",      icona: "🐑" },
-  { id: "pesce",   nome: "Pesce & Mare", icona: "🐟" },
-  { id: "verdure", nome: "Verdure",      icona: "🥦" },
+  { id: "manzo",    nome: "Manzo",        icona: "🐄" },
+  { id: "vitello",  nome: "Vitello",      icona: "🐮" },
+  { id: "maiale",   nome: "Maiale",       icona: "🐷" },
+  { id: "pollo",    nome: "Pollo",        icona: "🐔" },
+  { id: "tacchino", nome: "Tacchino",     icona: "🦃" },
+  { id: "agnello",  nome: "Agnello",      icona: "🐑" },
+  { id: "pesce",    nome: "Pesce & Mare", icona: "🐟" },
+  { id: "verdure",  nome: "Verdure",      icona: "🥦" },
 ];
 
 const CATALOGO = [
@@ -111,6 +113,113 @@ const CATALOGO = [
       brace: "Diretta a calore medio (brace stabilizzata a 160-180°C). Il grasso che cola fa fiammate: tieni pronta una zona libera dove spostare le fette.",
       cottura: "2-3 min per lato girando spesso, in totale ~14 min, fino a 50-54°C al cuore. Chiudi con un'ultima passata sul lato del grasso per renderlo croccante.",
       riposo: "10 min, poi affetta sottile contro fibra.",
+    },
+  },
+  {
+    id: "filetto_manzo", nome: "Filetto", categoria: "manzo", icona: "🥩",
+    gradi: { rare: 8 * 60, media: 10 * 60, well: 13 * 60 }, spessoreBase: 3.5,
+    flip: null, metodo: "diretta", calore: "alto",
+    tempInterna: "48-50°C al sangue · 54-56°C media (magro: mai oltre)",
+    riposo: 5, frigo: 30, marinatura: 0, salaPrima: true,
+    scheda: {
+      acquisto: "Medaglioni dal cuore del filetto, 3-4 cm, legati con lo spago per tenere la forma. Il taglio più tenero (e caro) del manzo.",
+      preparazione: "Fuori dal frigo 30 min prima. Sala 40+ min prima o subito prima; un filo d'olio: è magrissimo e senza grasso di protezione.",
+      brace: "Diretta a fuoco alto per la crosta, bordo della brace per finire.",
+      cottura: "2-3 min per faccia a fuoco vivo, poi sposta al bordo fino al target. Senza grasso interno si asciuga oltre la media: 48-50°C al sangue, 54-56°C media, stop.",
+      riposo: "5 min, con una noce di burro sopra se vuoi il tocco da ristorante.",
+    },
+  },
+  {
+    id: "bavetta", nome: "Bavetta", categoria: "manzo", icona: "🥩",
+    tempo: 10 * 60, flip: null, metodo: "diretta", calore: "alto",
+    tempInterna: "52-55°C: al sangue/media, mai oltre",
+    riposo: 8, frigo: 30, marinatura: 60, salaPrima: false,
+    scheda: {
+      acquisto: "Bavetta (flank steak): taglio piatto della pancia con fibre lunghe ed evidenti, 700 g-1 kg intera. Economica e saporitissima.",
+      preparazione: "Marinatura 1 h+ (olio, salsa di soia o limone, aglio): le fibre aperte la assorbono benissimo. Asciugare bene prima della griglia.",
+      brace: "Diretta a fuoco vivo.",
+      cottura: "4-5 min per lato, una girata. Va tenuta al sangue/media (52-55°C): oltre le fibre si stringono e diventa dura.",
+      riposo: "8-10 min, poi SEMPRE affettata sottile perpendicolare alle fibre lunghe: è il segreto per averla tenera.",
+    },
+  },
+  {
+    id: "asado", nome: "Asado / Biancostato", categoria: "manzo", icona: "🥩",
+    tempo: 15 * 60, flip: "3-4", metodo: "diretta", calore: "medio",
+    tempInterna: "70°C+: qui si va ben cotti, grasso croccante",
+    riposo: 5, frigo: 30, marinatura: 0, salaPrima: false,
+    scheda: {
+      acquisto: "Biancostato/asado di manzo a fette sottili (1-1,5 cm) tagliate ATTRAVERSO le costine, stile 'banderita' argentina.",
+      preparazione: "Solo sale grosso prima di grigliare, alla maniera argentina.",
+      brace: "Diretta a calore medio e costante.",
+      cottura: "12-15 min girando ogni 3-4. Al contrario delle bistecche qui si va BEN cotti (70°C+): il grasso deve diventare croccante e la carne staccarsi dall'ossicino.",
+      riposo: "5 min.",
+    },
+  },
+
+  /* ---------------- VITELLO ---------------- */
+  {
+    id: "nodino_vitello", nome: "Nodino di vitello", categoria: "vitello", icona: "🥩",
+    tempo: 12 * 60, flip: null, metodo: "diretta", calore: "medio",
+    tempInterna: "60-62°C appena rosato (sicurezza USDA 63°C)",
+    riposo: 5, frigo: 30, marinatura: 0, salaPrima: true,
+    scheda: {
+      acquisto: "Nodino (la 'fiorentina' del vitello: costoletta con osso a T) da 2,5-3 cm, carne rosa chiaro e compatta.",
+      preparazione: "Fuori dal frigo 30 min prima. Sala 40+ min prima o subito prima; un filo d'olio perché il vitello è magro.",
+      brace: "Diretta a calore medio-alto; oltre i 3 cm finisci in zona indiretta.",
+      cottura: "5-6 min per lato, una girata. Il vitello è più delicato del manzo: appena rosato al cuore (60-62°C) è al suo meglio, ben oltre si asciuga.",
+      riposo: "5 min coperto.",
+    },
+  },
+  {
+    id: "braciola_vitello", nome: "Braciola di vitello", categoria: "vitello", icona: "🥩",
+    tempo: 7 * 60, flip: null, metodo: "diretta", calore: "medio",
+    tempInterna: "60-62°C: centro appena rosato",
+    riposo: 3, frigo: 20, marinatura: 0, salaPrima: false,
+    scheda: {
+      acquisto: "Braciola o fettina di vitello da 1-1,5 cm, con o senza osso.",
+      preparazione: "Fuori dal frigo 20 min prima, asciutta; olio leggero e sale subito prima di grigliare.",
+      brace: "Diretta a calore medio-alto: è sottile, serve crosta veloce.",
+      cottura: "3-4 min per lato, una girata. Fuori appena il centro è rosato: il vitello sottile si asciuga in un attimo.",
+      riposo: "2-3 min.",
+    },
+  },
+  {
+    id: "tagliata_vitello", nome: "Tagliata di vitello", categoria: "vitello", icona: "🥩",
+    tempo: 6 * 60, flip: null, metodo: "diretta", calore: "alto",
+    tempInterna: "56-58°C: rosata",
+    riposo: 4, frigo: 20, marinatura: 0, salaPrima: false,
+    scheda: {
+      acquisto: "Controfiletto o noce di vitello da ~2 cm, da affettare dopo la cottura.",
+      preparazione: "Fuori dal frigo 20 min prima, asciugata. Sala subito prima.",
+      brace: "Diretta a fuoco vivo.",
+      cottura: "2-3 min per lato, una girata: crosta fuori, rosata dentro (56-58°C).",
+      riposo: "4 min, poi affetta contro fibra: olio, limone, rucola e scaglie di grana.",
+    },
+  },
+  {
+    id: "spiedini_vitello", nome: "Spiedini di vitello", categoria: "vitello", icona: "🍢",
+    tempo: 10 * 60, flip: "3", metodo: "diretta", calore: "medio",
+    tempInterna: "62°C",
+    riposo: 3, frigo: 20, marinatura: 30, salaPrima: false,
+    scheda: {
+      acquisto: "Cubi regolari di 2,5 cm da noce o sottofesa di vitello.",
+      preparazione: "Marinatura 30 min (olio, limone, salvia o rosmarino): il vitello magro la ringrazia. Spiedi di legno a bagno 30 min.",
+      brace: "Diretta a calore medio.",
+      cottura: "~10 min girando ogni 3. Appena rosato al centro: 62°C.",
+      riposo: "3 min.",
+    },
+  },
+  {
+    id: "salsiccia_vitello", nome: "Salsiccia di vitello", categoria: "vitello", icona: "🌭",
+    tempo: 14 * 60, flip: "4-5", metodo: "diretta", calore: "medio",
+    tempInterna: "71°C (carne macinata)",
+    riposo: 2, frigo: 15, marinatura: 0, salaPrima: false,
+    scheda: {
+      acquisto: "Salsiccia di vitello: più magra e delicata di quella di maiale.",
+      preparazione: "Non bucarla. Un filo d'olio sulla superficie: essendo magra tende ad attaccarsi.",
+      brace: "Diretta a calore medio, senza fiamma.",
+      cottura: "12-15 min girando ogni 4-5. Da macinato va a 71°C, ma essendo magra non oltre: si asciuga prima di quella di maiale.",
+      riposo: "2 min.",
     },
   },
 
@@ -219,6 +328,71 @@ const CATALOGO = [
       riposo: "Nessuno.",
     },
   },
+  {
+    id: "filetto_maiale", nome: "Filetto di maiale", categoria: "maiale", icona: "🥩",
+    tempo: 22 * 60, flip: "5-6", metodo: "mista", calore: "medio",
+    tempInterna: "62-63°C: rosato al centro = succoso e sicuro (USDA)",
+    riposo: 5, frigo: 30, marinatura: 0, salaPrima: true,
+    scheda: {
+      acquisto: "Filetto di maiale intero (400-500 g), pulito dalla pellicina argentata (chiedi al macellaio: cruda è gommosa).",
+      preparazione: "Sale 40+ min prima, o un rub leggero (paprika, aglio, pepe); un filo d'olio.",
+      brace: "Mista: rosolatura in diretta, poi zona indiretta per finire.",
+      cottura: "~8 min in diretta girandolo sui 4 'lati', poi 12-15 min in indiretta fino a 62-63°C al cuore. Rosato al centro è perfetto: stracotto è il modo classico di rovinarlo.",
+      riposo: "5 min, poi a medaglioni spessi.",
+    },
+  },
+  {
+    id: "capocollo", nome: "Capocollo a fette", categoria: "maiale", icona: "🥩",
+    tempo: 9 * 60, flip: null, metodo: "diretta", calore: "medio",
+    tempInterna: "68-70°C: il grasso interno deve sciogliersi",
+    riposo: 3, frigo: 20, marinatura: 0, salaPrima: false,
+    scheda: {
+      acquisto: "Capocollo/coppa fresca a fette da 1,5-2 cm: venato di grasso, è tra i tagli più riconoscenti sulla brace.",
+      preparazione: "Niente olio (è già grasso), sale leggero: è saporito di suo.",
+      brace: "Diretta a calore medio; il grasso può fare fiammate, tieni una zona libera.",
+      cottura: "4-5 min per lato. Al contrario dei tagli magri, qui serve arrivare a 68-70°C: il grasso interno si scioglie ed è quello che lo rende morbido.",
+      riposo: "3 min.",
+    },
+  },
+  {
+    id: "bombette", nome: "Bombette pugliesi", categoria: "maiale", icona: "🧆",
+    tempo: 16 * 60, flip: "5", metodo: "mista", calore: "medio",
+    tempInterna: "72-75°C: maiale sicuro e cuore di formaggio fuso",
+    riposo: 2, frigo: 20, marinatura: 0, salaPrima: false,
+    scheda: {
+      acquisto: "Bombette pronte dal macellaio (involtini di capocollo ripieni di caciocavallo o canestrato), o falle tu: fetta sottile di capocollo, formaggio, sale, pepe, prezzemolo, chiuse a pallina.",
+      preparazione: "Infilale ben strette su uno spiedo d'acciaio: si girano tutte insieme e non si aprono.",
+      brace: "Brace calda ma MAI fiamma viva, meglio con zona indiretta: il grasso e il formaggio che colano si carbonizzano sul fuoco diretto.",
+      cottura: "15-20 min girando lo spiedo ogni 5. Pronte a 72-75°C: dorate fuori, cuore di formaggio fuso e filante.",
+      riposo: "2 min: il formaggio dentro scotta.",
+    },
+  },
+  {
+    id: "spiedini_maiale", nome: "Spiedini di maiale", categoria: "maiale", icona: "🍢",
+    tempo: 12 * 60, flip: "3", metodo: "diretta", calore: "medio",
+    tempInterna: "63-65°C",
+    riposo: 3, frigo: 20, marinatura: 30, salaPrima: false,
+    scheda: {
+      acquisto: "Cubi di 2,5 cm da coppa (più succosa) o lonza (più magra).",
+      preparazione: "Marinatura 30 min+ (olio, aglio, rosmarino, paprika). Spiedi di legno a bagno 30 min. Pezzi non stipati.",
+      brace: "Diretta a calore medio.",
+      cottura: "10-14 min girando ogni 3. La coppa perdona, la lonza no: fuori a 63-65°C.",
+      riposo: "3 min.",
+    },
+  },
+  {
+    id: "stinco", nome: "Stinco (precotto)", categoria: "maiale", icona: "🍖",
+    tempo: 28 * 60, flip: "5-6", metodo: "mista", calore: "medio",
+    tempInterna: "già cotto: portalo a 70°C+ al cuore, cotenna croccante",
+    riposo: 5, frigo: 30, marinatura: 0, salaPrima: false,
+    scheda: {
+      acquisto: "Stinco di maiale PRECOTTO (sottovuoto): quello crudo alla brace richiede 3 ore, non è da grigliata.",
+      preparazione: "Asciugalo, massaggialo con olio e paprika. Prepara una glassa (miele+senape, o birra e miele) per il finale.",
+      brace: "Mista: prevalentemente zona media/indiretta, rotazioni frequenti.",
+      cottura: "25-30 min girando ogni 5-6 finché la cotenna è croccante e il cuore ben caldo (70°C+). Glassa solo negli ultimi 5-10 min: prima brucia.",
+      riposo: "5 min.",
+    },
+  },
 
   /* ---------------- POLLO ---------------- */
   {
@@ -287,6 +461,60 @@ const CATALOGO = [
     },
   },
 
+  /* ---------------- TACCHINO ---------------- */
+  {
+    id: "fesa_tacchino", nome: "Fesa di tacchino", categoria: "tacchino", icona: "🍗",
+    tempo: 12 * 60, flip: null, metodo: "diretta", calore: "medio",
+    tempInterna: "74°C sempre (pollame, USDA)",
+    riposo: 3, frigo: 20, marinatura: 30, salaPrima: false,
+    scheda: {
+      acquisto: "Fesa a fette spesse 2 cm: le fettine sottili da scaloppina sulla brace diventano suole.",
+      preparazione: "È la carne che si secca più facilmente: salamoia 30 min (1 l acqua + 60 g sale) o marinatura con olio e limone, poi asciugare.",
+      brace: "Diretta a calore medio.",
+      cottura: "5-6 min per lato, una girata. Pollame: sempre 74°C al cuore, ma toglila appena ci arriva.",
+      riposo: "3-5 min coperto.",
+    },
+  },
+  {
+    id: "coscia_tacchino", nome: "Fuso / coscia di tacchino", categoria: "tacchino", icona: "🍗",
+    tempo: 45 * 60, flip: "10-12", metodo: "indiretta", calore: "medio",
+    tempInterna: "80°C all'osso",
+    riposo: 5, frigo: 30, marinatura: 30, salaPrima: false,
+    scheda: {
+      acquisto: "Fusi di tacchino da 500-700 g l'uno: uno basta per 2 persone.",
+      preparazione: "Marinatura o rub 30 min+ (paprika, aglio, rosmarino). Pelle asciutta = pelle croccante.",
+      brace: "Indiretta (~180°C) con coperchio; finitura di 5 min in diretta per la pelle.",
+      cottura: "40-50 min girando ogni 10-12. È un pezzo grosso: pronto a 80°C vicino all'osso, succhi chiari.",
+      riposo: "5-8 min, poi affetta la polpa dall'osso.",
+    },
+  },
+  {
+    id: "spiedini_tacchino", nome: "Spiedini di tacchino", categoria: "tacchino", icona: "🍢",
+    tempo: 13 * 60, flip: "3", metodo: "diretta", calore: "medio",
+    tempInterna: "74°C (pollame, USDA)",
+    riposo: 0, frigo: 15, marinatura: 30, salaPrima: false,
+    scheda: {
+      acquisto: "Cubi di fesa o di coscia disossata da 2,5-3 cm (la coscia resta più succosa).",
+      preparazione: "Marinatura 30 min+ obbligatoria per la fesa (yogurt o olio-limone). Spiedi di legno a bagno.",
+      brace: "Diretta a calore medio.",
+      cottura: "11-14 min girando ogni 3. Sempre 74°C al cuore.",
+      riposo: "Nessuno.",
+    },
+  },
+  {
+    id: "hamburger_tacchino", nome: "Hamburger di tacchino", categoria: "tacchino", icona: "🍔",
+    tempo: 12 * 60, flip: null, metodo: "diretta", calore: "medio",
+    tempInterna: "74°C sempre (macinato di pollame, USDA)",
+    riposo: 0, frigo: 15, marinatura: 0, salaPrima: false,
+    scheda: {
+      acquisto: "Macinato di tacchino non troppo magro (meglio con un po' di coscia), medaglioni da 2 cm.",
+      preparazione: "Fossetta al centro col pollice; un filo d'olio sulla superficie (è più magro del manzo e si attacca).",
+      brace: "Diretta a calore medio: a fuoco alto si asciuga fuori prima di essere sicuro dentro.",
+      cottura: "5-6 min per lato, una girata, mai schiacciarlo. Macinato di pollame: 74°C SEMPRE, zero rosa.",
+      riposo: "Nessuno: nel panino.",
+    },
+  },
+
   /* ---------------- AGNELLO ---------------- */
   {
     id: "costolette_agnello", nome: "Costolette d'agnello", categoria: "agnello", icona: "🥩",
@@ -325,6 +553,19 @@ const CATALOGO = [
       brace: "Brace viva ma non forte, senza fiamma, carne a 3-5 cm. La fornacella (canalina) è l'ideale; su griglia normale allineali fitti, uno accanto all'altro, con i manici fuori dalla brace.",
       cottura: "2-3 min per lato: gira quando la carne passa dal rosso al bruno e 'suda'. Due girate per lato bastano, 8-10 min totali. Non devono asciugarsi.",
       riposo: "Zero: si servono bollenti, a mazzetti, appena escono.",
+    },
+  },
+  {
+    id: "cosciotto_agnello", nome: "Cosciotto a fette", categoria: "agnello", icona: "🥩",
+    tempo: 12 * 60, flip: null, metodo: "diretta", calore: "medio",
+    tempInterna: "58-60°C rosato",
+    riposo: 5, frigo: 30, marinatura: 30, salaPrima: false,
+    scheda: {
+      acquisto: "Fette di cosciotto ('steak' d'agnello) da 2,5 cm, con il piccolo osso centrale.",
+      preparazione: "Marinatura 30 min-2 h (olio, aglio, rosmarino, limone) o solo sale. Fuori dal frigo 30 min prima.",
+      brace: "Diretta a calore medio-alto.",
+      cottura: "5-6 min per lato, una girata. Rosato al cuore (58-60°C): è lì che l'agnello dà il meglio.",
+      riposo: "5 min coperte.",
     },
   },
 
@@ -379,6 +620,32 @@ const CATALOGO = [
       brace: "Indiretta o brace dolce: il pesce intero ha bisogno di tempo senza bruciare fuori.",
       cottura: "10-15 min per lato, UNA sola girata con due palette (o gratella a libro). Pronto quando l'occhio è bianco, la pinna dorsale si sfila senza resistenza e la carne si stacca dalla lisca.",
       riposo: "3 min, poi sfiletta al tavolo.",
+    },
+  },
+  {
+    id: "calamari", nome: "Calamari", categoria: "pesce", icona: "🦑",
+    tempo: 5 * 60, flip: null, metodo: "diretta", calore: "alto",
+    tempInterna: "opachi e arricciati = pronti; oltre = gomma",
+    riposo: 0, frigo: 10, marinatura: 0, salaPrima: false,
+    scheda: {
+      acquisto: "Calamari freschi già puliti, di misura media; i ciuffi infilzali su uno spiedino.",
+      preparazione: "Asciugali BENISSIMO (l'acqua li fa bollire invece che grigliare), olio e sale; sui corpi grandi incisioni leggere a griglia.",
+      brace: "Fuoco vivo, griglia rovente: cottura lampo.",
+      cottura: "2-3 min per lato: appena diventano opachi e si arricciano sono pronti. La regola dei calamari: o 3 minuti o 30 — tutto quello in mezzo è gomma.",
+      riposo: "Nessuno: olio, limone, prezzemolo e in tavola.",
+    },
+  },
+  {
+    id: "sardine", nome: "Sardine", categoria: "pesce", icona: "🐟",
+    tempo: 6 * 60, flip: null, metodo: "diretta", calore: "alto",
+    tempInterna: "pelle croccante, carne che si stacca dalla lisca",
+    riposo: 0, frigo: 10, marinatura: 0, salaPrima: false,
+    scheda: {
+      acquisto: "Sardine fresche intere, lucide e sode: 5-6 a testa. Per la brace non serve squamarle né pulirle.",
+      preparazione: "Solo asciugate, olio e sale grosso. Una gratella a libro rende la girata un gesto solo.",
+      brace: "Fuoco vivo.",
+      cottura: "2-3 min per lato: pelle abbrustolita e carne che si stacca dalla lisca. Sono gli arrosticini del mare: si mangiano con le dita.",
+      riposo: "Nessuno.",
     },
   },
 
@@ -461,7 +728,89 @@ const CATALOGO = [
       riposo: "Nessuno.",
     },
   },
+  {
+    id: "radicchio", nome: "Radicchio", categoria: "verdure", icona: "🥬",
+    tempo: 7 * 60, flip: null, metodo: "diretta", calore: "medio",
+    tempInterna: "cuore morbido, foglie esterne bruciacchiate",
+    riposo: 0, frigo: 0, marinatura: 0, salaPrima: false,
+    scheda: {
+      acquisto: "Radicchio tardivo di Treviso o lungo precoce, sodo.",
+      preparazione: "A quarti nel senso della lunghezza, mantenendo il torsolo: tiene insieme le foglie. Olio e sale prima.",
+      brace: "Diretta a calore medio.",
+      cottura: "3-4 min per lato: le foglie esterne bruciacchiate ci stanno, il cuore deve ammorbidirsi.",
+      riposo: "Da caldo con olio buono e una goccia di balsamico; l'amaro col fumo è il suo bello.",
+    },
+  },
+  {
+    id: "patate", nome: "Patate", categoria: "verdure", icona: "🥔",
+    tempo: 12 * 60, flip: "4-5", metodo: "diretta", calore: "medio",
+    tempInterna: "crosta dorata, interno morbido",
+    riposo: 0, frigo: 0, marinatura: 0, salaPrima: false,
+    scheda: {
+      acquisto: "Patate a pasta gialla, di misura media e uniforme.",
+      preparazione: "Il trucco: lessale 10 min con la buccia (mezze cotte), poi a fette spesse 1,5 cm con olio, sale e rosmarino. Alternativa zero-sbatti: intere nel cartoccio di alluminio, direttamente NELLA brace, 40-45 min.",
+      brace: "Diretta a calore medio (fette) o dentro la brace (cartoccio).",
+      cottura: "10-14 min girando ogni 4-5: crosta dorata e interno morbido alla forchetta.",
+      riposo: "Nessuno.",
+    },
+  },
 ];
+
+/* ================================================================
+   SPESA — dati per il calcolo delle quantità da comprare.
+   peso  = grammi medi a pezzo (null = si compra a peso)
+   resa  = frazione commestibile (osso/guscio/scarto escluso)
+   unita = etichetta plurale dei pezzi
+   Le verdure non sono in mappa: contorni, fuori dal budget carne.
+   ================================================================ */
+const SPESA = {
+  bistecca:           { peso: 300,  resa: 0.95, unita: "bistecche" },
+  costata:            { peso: 1000, resa: 0.55, unita: "costate" },
+  tagliata:           { peso: null, resa: 1,    unita: null },
+  hamburger:          { peso: 180,  resa: 1,    unita: "hamburger" },
+  spiedini_manzo:     { peso: 150,  resa: 1,    unita: "spiedini" },
+  picanha:            { peso: 300,  resa: 0.95, unita: "fette" },
+  filetto_manzo:      { peso: 200,  resa: 1,    unita: "medaglioni" },
+  bavetta:            { peso: null, resa: 1,    unita: null },
+  asado:              { peso: 250,  resa: 0.6,  unita: "fette" },
+  nodino_vitello:     { peso: 350,  resa: 0.75, unita: "nodini" },
+  braciola_vitello:   { peso: 200,  resa: 0.9,  unita: "braciole" },
+  tagliata_vitello:   { peso: null, resa: 1,    unita: null },
+  spiedini_vitello:   { peso: 150,  resa: 1,    unita: "spiedini" },
+  salsiccia_vitello:  { peso: 100,  resa: 1,    unita: "salsicce" },
+  salsiccia:          { peso: 100,  resa: 1,    unita: "salsicce" },
+  luganega:           { peso: null, resa: 1,    unita: null },
+  salamella:          { peso: 120,  resa: 1,    unita: "salamelle" },
+  costine:            { peso: 1200, resa: 0.45, unita: "rack" },
+  pancetta:           { peso: 50,   resa: 1,    unita: "fette" },
+  braciola:           { peso: 150,  resa: 0.9,  unita: "braciole" },
+  costoletta:         { peso: 250,  resa: 0.8,  unita: "costolette" },
+  wurstel:            { peso: 100,  resa: 1,    unita: "wurstel" },
+  filetto_maiale:     { peso: 450,  resa: 0.95, unita: "filetti" },
+  capocollo:          { peso: 180,  resa: 1,    unita: "fette" },
+  bombette:           { peso: 60,   resa: 1,    unita: "bombette" },
+  spiedini_maiale:    { peso: 150,  resa: 1,    unita: "spiedini" },
+  stinco:             { peso: 700,  resa: 0.6,  unita: "stinchi" },
+  petto_pollo:        { peso: 250,  resa: 1,    unita: "petti" },
+  coscia_pollo:       { peso: 300,  resa: 0.65, unita: "cosce" },
+  ali_pollo:          { peso: 100,  resa: 0.55, unita: "ali" },
+  galletto:           { peso: 550,  resa: 0.6,  unita: "galletti" },
+  spiedini_pollo:     { peso: 150,  resa: 1,    unita: "spiedini" },
+  fesa_tacchino:      { peso: 200,  resa: 1,    unita: "fette" },
+  coscia_tacchino:    { peso: 600,  resa: 0.7,  unita: "fusi" },
+  spiedini_tacchino:  { peso: 150,  resa: 1,    unita: "spiedini" },
+  hamburger_tacchino: { peso: 150,  resa: 1,    unita: "hamburger" },
+  costolette_agnello: { peso: 100,  resa: 0.65, unita: "costolette" },
+  spiedini_agnello:   { peso: 150,  resa: 1,    unita: "spiedini" },
+  arrosticini:        { peso: 30,   resa: 0.95, unita: "arrosticini" },
+  cosciotto_agnello:  { peso: 280,  resa: 0.85, unita: "fette" },
+  salmone:            { peso: 200,  resa: 1,    unita: "tranci" },
+  gamberoni:          { peso: 60,   resa: 0.5,  unita: "gamberoni" },
+  spada:              { peso: 200,  resa: 1,    unita: "tranci" },
+  branzino:           { peso: 500,  resa: 0.5,  unita: "pesci" },
+  calamari:           { peso: 150,  resa: 0.85, unita: "calamari" },
+  sardine:            { peso: 50,   resa: 0.6,  unita: "sardine" },
+};
 
 const byId = Object.fromEntries(CATALOGO.map(c => [c.id, c]));
 
@@ -469,10 +818,10 @@ const byId = Object.fromEntries(CATALOGO.map(c => [c.id, c]));
    STATO
    ================================================================ */
 const selezione = new Set();
-const opzioni = {          // per gli alimenti con grado+spessore
-  bistecca: { grado: "media", spessore: 2.5 },
-  costata:  { grado: "rare",  spessore: 4 },
-};
+const opzioni = {};        // per gli alimenti con grado+spessore
+CATALOGO.filter(i => i.gradi).forEach(i => {
+  opzioni[i.id] = { grado: i.id === "costata" ? "rare" : "media", spessore: i.spessoreBase };
+});
 
 let sequenza  = [];
 let ticker    = null;
@@ -523,9 +872,10 @@ function formatSeconds(sec) {
 }
 
 /* ================================================================
-   RENDER CATALOGO
+   RENDER CATALOGO — accordion per animale/categoria + ricerca
    ================================================================ */
-const gridEl = document.getElementById("food-grid");
+const gridEl   = document.getElementById("food-grid");
+const searchEl = document.getElementById("search");
 
 function renderCatalogo() {
   gridEl.innerHTML = "";
@@ -533,10 +883,27 @@ function renderCatalogo() {
     const items = CATALOGO.filter(c => c.categoria === cat.id);
     if (!items.length) return;
 
-    const label = document.createElement("div");
-    label.className = "cat-label";
-    label.textContent = `${cat.icona} ${cat.nome}`;
-    gridEl.appendChild(label);
+    const acc = document.createElement("div");
+    acc.className = "cat-acc";
+    acc.dataset.cat = cat.id;
+
+    const head = document.createElement("button");
+    head.type = "button";
+    head.className = "cat-head";
+    head.setAttribute("aria-expanded", "false");
+    head.innerHTML = `<span class="cat-titolo">${cat.icona} ${cat.nome}</span>
+      <span class="cat-count">${items.length} tagli</span>
+      <span class="cat-chev" aria-hidden="true">▾</span>`;
+    head.addEventListener("click", () => {
+      const aperta = acc.classList.toggle("open");
+      head.setAttribute("aria-expanded", String(aperta));
+    });
+
+    const body = document.createElement("div");
+    body.className = "cat-body";
+    const grid = document.createElement("div");
+    grid.className = "food-grid";
+    body.appendChild(grid);
 
     items.forEach(item => {
       const card = document.createElement("div");
@@ -565,16 +932,54 @@ function renderCatalogo() {
         if (e.key === " " || e.key === "Enter") { e.preventDefault(); toggleItem(item.id, card); }
       });
 
-      gridEl.appendChild(card);
-
-      if (item.gradi) gridEl.appendChild(buildOpzioni(item));
+      grid.appendChild(card);
+      if (item.gradi) grid.appendChild(buildOpzioni(item));
     });
+
+    acc.appendChild(head);
+    acc.appendChild(body);
+    gridEl.appendChild(acc);
   });
 
   gridEl.querySelectorAll(".info-btn").forEach(btn => {
     btn.addEventListener("click", () => apriScheda(btn.dataset.info));
   });
 }
+
+/* --- ricerca per nome taglio o categoria/animale --- */
+function normalizza(s) {
+  return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+const nomiCategorie = Object.fromEntries(CATEGORIE.map(c => [c.id, normalizza(c.nome)]));
+
+function applicaRicerca() {
+  const q = normalizza(searchEl.value.trim());
+
+  gridEl.querySelectorAll(".cat-acc").forEach(acc => {
+    const catId    = acc.dataset.cat;
+    const catMatch = q && nomiCategorie[catId].includes(q);
+    let visibili = 0;
+
+    acc.querySelectorAll(".food-card").forEach(card => {
+      const item  = byId[card.dataset.id];
+      const match = !q || catMatch ||
+        normalizza(item.nome).includes(q) || normalizza(item.id).includes(q);
+      card.classList.toggle("nascosta", !match);
+      const opts = document.getElementById(`opts-${item.id}`);
+      if (opts) opts.classList.toggle("nascosta", !match);
+      if (match) visibili++;
+    });
+
+    acc.classList.toggle("nascosta", visibili === 0);
+    if (q && visibili > 0) {
+      acc.classList.add("open");
+      acc.querySelector(".cat-head").setAttribute("aria-expanded", "true");
+    }
+  });
+}
+
+searchEl.addEventListener("input", applicaRicerca);
 
 function buildOpzioni(item) {
   const wrap = document.createElement("div");
@@ -615,11 +1020,15 @@ function aggiornaTempoCard(item) {
 function toggleItem(id, card) {
   if (selezione.has(id)) selezione.delete(id); else selezione.add(id);
   const sel = selezione.has(id);
-  card.classList.toggle("selected", sel);
-  card.setAttribute("aria-checked", String(sel));
+  if (!card) card = gridEl.querySelector(`.food-card[data-id="${id}"]`);
+  if (card) {
+    card.classList.toggle("selected", sel);
+    card.setAttribute("aria-checked", String(sel));
+  }
   const opts = document.getElementById(`opts-${id}`);
   if (opts) opts.classList.toggle("hidden", !sel);
   aggiornaContatore();
+  aggiornaCarrello();
   aggiornaPiano();
 }
 
@@ -664,6 +1073,110 @@ function chiudiScheda() {
 overlayEl.addEventListener("click", (e) => { if (e.target === overlayEl) chiudiScheda(); });
 document.getElementById("scheda-close").addEventListener("click", chiudiScheda);
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") chiudiScheda(); });
+
+/* ================================================================
+   CARRELLO + QUANTITÀ DA COMPRARE
+   Dosi (fonti IT): 300 g/adulto di carne netta (450 g appetito forte),
+   bambini 50%, −20% se contorni e pane abbondanti. La quota si divide
+   tra i "secondi" nel carrello; SPESA converte in peso crudo e pezzi.
+   ================================================================ */
+const carrelloEl  = document.getElementById("carrello");
+const adultiEl    = document.getElementById("q-adulti");
+const bambiniEl   = document.getElementById("q-bambini");
+const appetitoEl  = document.getElementById("q-appetito");
+const contorniEl  = document.getElementById("q-contorni");
+const copiaBtn    = document.getElementById("copia-lista");
+
+[adultiEl, bambiniEl, appetitoEl, contorniEl].forEach(el =>
+  el.addEventListener("input", aggiornaCarrello));
+
+function arrotonda50(g) {
+  return Math.max(50, Math.round(g / 50) * 50);
+}
+
+function fmtPeso(g) {
+  return g >= 1000 ? `${(g / 1000).toFixed(1).replace(".", ",").replace(",0", "")} kg` : `${g} g`;
+}
+
+function calcolaSpesa() {
+  const adulti  = Math.max(0, parseInt(adultiEl.value, 10) || 0);
+  const bambini = Math.max(0, parseInt(bambiniEl.value, 10) || 0);
+  const base    = appetitoEl.value === "abbondante" ? 450 : 300;
+  let totale    = adulti * base + bambini * base * 0.5;
+  if (contorniEl.value === "abbondanti") totale *= 0.8;
+
+  const items    = [...selezione].map(id => byId[id]);
+  const secondi  = items.filter(i => SPESA[i.id]);
+  const contorni = items.filter(i => !SPESA[i.id]);
+  const quota    = secondi.length ? totale / secondi.length : 0;
+
+  const righe = secondi.map(item => {
+    const sp    = SPESA[item.id];
+    const crudo = arrotonda50(quota / sp.resa);
+    const pezzi = sp.peso ? Math.max(1, Math.round(crudo / sp.peso)) : null;
+    return { item, crudo, pezzi, unita: sp.unita };
+  });
+
+  return { adulti, bambini, totale: Math.round(totale), righe, contorni };
+}
+
+function aggiornaCarrello() {
+  if (selezione.size === 0) {
+    carrelloEl.innerHTML = `<p class="piano-vuoto">Il carrello è vuoto: seleziona i tagli qui sopra.</p>`;
+    copiaBtn.classList.add("hidden");
+    return;
+  }
+
+  const { totale, righe, contorni } = calcolaSpesa();
+
+  const righeHtml = righe.map(r => `
+    <li>
+      <span class="car-icona">${r.item.icona}</span>
+      <span class="car-nome">${r.item.nome}</span>
+      <span class="car-qta">${fmtPeso(r.crudo)}${r.pezzi ? ` <em>(≈ ${r.pezzi} ${r.unita})</em>` : ""}</span>
+      <button type="button" class="car-x" data-rimuovi="${r.item.id}" aria-label="Togli ${r.item.nome}">✕</button>
+    </li>`).join("");
+
+  const contorniHtml = contorni.length ? `
+    <li class="car-contorni">
+      <span class="car-icona">🥗</span>
+      <span class="car-nome">Contorni: ${contorni.map(c => c.nome).join(", ")}</span>
+      <span class="car-qta"><em>~200 g a testa in tutto</em></span>
+      <span></span>
+    </li>` : "";
+
+  carrelloEl.innerHTML = `
+    <ul class="car-lista">${righeHtml}${contorniHtml}</ul>
+    ${righe.length ? `<p class="car-totale">Carne/pesce da comprare in totale: <strong>~${fmtPeso(righe.reduce((s, r) => s + r.crudo, 0))}</strong> (fabbisogno netto ${fmtPeso(totale)})</p>` : ""}`;
+
+  carrelloEl.querySelectorAll("[data-rimuovi]").forEach(btn =>
+    btn.addEventListener("click", () => toggleItem(btn.dataset.rimuovi)));
+
+  copiaBtn.classList.toggle("hidden", righe.length === 0);
+}
+
+function listaSpesaTesto() {
+  const { adulti, bambini, righe, contorni } = calcolaSpesa();
+  const testa = `Lista spesa griglia — ${adulti} adulti${bambini ? ` + ${bambini} bambini` : ""}`;
+  const corpo = righe.map(r =>
+    `• ${r.item.nome}: ${fmtPeso(r.crudo)}${r.pezzi ? ` (circa ${r.pezzi} ${r.unita})` : ""}`).join("\n");
+  const coda = contorni.length ? `\nContorni: ${contorni.map(c => c.nome).join(", ")} (~200 g a testa in tutto)` : "";
+  return `${testa}\n${corpo}${coda}`;
+}
+
+copiaBtn.addEventListener("click", async () => {
+  const testo = listaSpesaTesto();
+  let ok = false;
+  try { await navigator.clipboard.writeText(testo); ok = true; }
+  catch (_) {
+    const ta = document.createElement("textarea");
+    ta.value = testo; document.body.appendChild(ta);
+    ta.select(); try { ok = document.execCommand("copy"); } catch (_) {}
+    ta.remove();
+  }
+  copiaBtn.textContent = ok ? "Copiata ✓" : "Copia non riuscita";
+  setTimeout(() => { copiaBtn.textContent = "📋 Copia lista della spesa"; }, 2000);
+});
 
 /* ================================================================
    PIANO DI PREPARAZIONE
@@ -990,4 +1503,5 @@ new IntersectionObserver(([entry]) => {
 
 renderCatalogo();
 aggiornaContatore();
+aggiornaCarrello();
 aggiornaPiano();
