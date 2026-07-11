@@ -1326,7 +1326,6 @@ const adultiEl    = document.getElementById("q-adulti");
 const bambiniEl   = document.getElementById("q-bambini");
 const appetitoEl  = document.getElementById("q-appetito");
 const contorniEl  = document.getElementById("q-contorni");
-const copiaBtn    = document.getElementById("copia-lista");
 const shareCarBtn = document.getElementById("condividi-carrello");
 
 [adultiEl, bambiniEl, appetitoEl, contorniEl].forEach(el =>
@@ -1366,7 +1365,6 @@ function aggiornaCarrello() {
   if (selezione.size === 0) {
     carrelloEl.innerHTML = `<p class="piano-vuoto">Il carrello è vuoto: seleziona i tagli qui sopra.</p>`;
     sintesiEl.innerHTML = "";
-    copiaBtn.classList.add("hidden");
     shareCarBtn.classList.add("hidden");
     return;
   }
@@ -1397,7 +1395,6 @@ function aggiornaCarrello() {
   carrelloEl.querySelectorAll("[data-rimuovi]").forEach(btn =>
     btn.addEventListener("click", () => toggleItem(btn.dataset.rimuovi)));
 
-  copiaBtn.classList.remove("hidden");
   shareCarBtn.classList.remove("hidden");
 }
 
@@ -1409,20 +1406,6 @@ function listaSpesaTesto() {
   const coda = contorni.length ? `\nContorni: ${contorni.map(c => c.nome).join(", ")} (~200 g a testa in tutto)` : "";
   return `${testa}\n${corpo}${coda}${sintesiTesto([...selezione].map(id => byId[id]))}`;
 }
-
-copiaBtn.addEventListener("click", async () => {
-  const testo = listaSpesaTesto();
-  let ok = false;
-  try { await navigator.clipboard.writeText(testo); ok = true; }
-  catch (_) {
-    const ta = document.createElement("textarea");
-    ta.value = testo; document.body.appendChild(ta);
-    ta.select(); try { ok = document.execCommand("copy"); } catch (_) {}
-    ta.remove();
-  }
-  copiaBtn.textContent = ok ? "Copiata ✓" : "Copia non riuscita";
-  setTimeout(() => { copiaBtn.textContent = "📋 Copia lista spesa + preparazione"; }, 2000);
-});
 
 /* ================================================================
    PIANO DI PREPARAZIONE

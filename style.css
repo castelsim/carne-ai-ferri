@@ -380,21 +380,19 @@ h2 {
   font-size: .92rem;
 }
 
-.car-btns { display: flex; gap: 10px; flex-wrap: wrap; }
-
-#copia-lista, #condividi-carrello {
-  padding: 12px 18px;
+#condividi-carrello {
+  width: 100%;
+  padding: 13px 18px;
   font-size: 1rem;
   font-weight: 700;
   border: 2px solid var(--accento);
   border-radius: 10px;
-  background: var(--card);
-  color: var(--accento-scuro);
+  background: var(--accento);
+  color: #fff;
   cursor: pointer;
 }
 
-#condividi-carrello { flex: 1; background: var(--accento); color: #fff; }
-#copia-lista:hover { background: var(--giallo-bg); }
+#condividi-carrello:hover { background: var(--accento-scuro); }
 
 /* ---------------- Sintesi operativa ---------------- */
 .sint-titolo { font-size: 1.05rem; margin: 22px 0 10px; }
