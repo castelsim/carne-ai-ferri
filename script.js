@@ -1267,21 +1267,10 @@ const nextEl       = document.getElementById("next");
 const nextStickyEl = document.getElementById("next-sticky");
 const startBtn     = document.getElementById("startBtn");
 const resetBtn     = document.getElementById("resetBtn");
+const shareBtn     = document.getElementById("shareBtn");
 const avvisoEl     = document.getElementById("avviso");
 
-startBtn.addEventListener("click", () => {
-  const items = [...selezione].map(id => byId[id]);
-  if (!items.length) { mostraAvviso("Seleziona almeno un alimento."); return; }
-
-  initAudio();
-  if ("Notification" in window && Notification.permission === "default") Notification.requestPermission();
-
-  startBtn.disabled = true;
-  resetBtn.classList.remove("hidden");
-  logEl.innerHTML = "";
-  clearAll();
-  activeIdx = -1;
-
+function costruisciEventi(items) {
   const maxTot = Math.max(...items.map(totaleSec));
   const eventi = [];
 
@@ -1314,14 +1303,27 @@ startBtn.addEventListener("click", () => {
   const prio = { metti: 0, gira: 1, togli: 2, finale: 3 };
   eventi.sort((a, b) => a.tempo !== b.tempo ? a.tempo - b.tempo : (prio[a.type] ?? 9) - (prio[b.type] ?? 9));
   eventi.push({ tempo: maxTot, type: "finale", msg: "TUTTO PRONTO! In tavola!" });
+  return eventi;
+}
 
+/* Pianifica gli eventi da un istante di avvio t0 (anche nel passato,
+   per chi apre un link condiviso a cottura già iniziata). */
+function pianificaEventi(eventi, t0) {
   sequenza = eventi;
-  startTs  = Date.now();
+  startTs  = t0;
 
   renderTimeline(sequenza);
   requestWakeLock();
 
+  const elapsed0 = (Date.now() - t0) / 1000;
+
   sequenza.forEach((ev, i) => {
+    if (ev.tempo < elapsed0 - 0.5) {           // evento già passato: spunta senza beep
+      const li = document.getElementById(`tl-${i}`);
+      if (li) { li.classList.add("done"); li.querySelector("input").checked = true; }
+      if (i === sequenza.length - 1) fineCottura();
+      return;
+    }
     const id = setTimeout(() => {
       aggiungiLog(ev.msg);
       playBeep(ev.type);
@@ -1331,20 +1333,41 @@ startBtn.addEventListener("click", () => {
       const li = document.getElementById(`tl-${i}`);
       if (li) { li.classList.add("done"); li.querySelector("input").checked = true; }
 
-      if (i === sequenza.length - 1) {
-        clearInterval(ticker); ticker = null;
-        aggiornaNext();
-        startTs = null;
-        startBtn.disabled = selezione.size === 0;
-        resetBtn.classList.add("hidden");
-        releaseWakeLock();
-      }
-    }, Math.max(0, ev.tempo) * 1000);
+      if (i === sequenza.length - 1) fineCottura();
+    }, Math.max(0, ev.tempo - elapsed0) * 1000);
     timeouts.push(id);
   });
 
-  ticker = setInterval(aggiornaNext, 250);
+  if (startTs !== null) {
+    ticker = setInterval(aggiornaNext, 250);
+    aggiornaNext();
+  }
+}
+
+function fineCottura() {
+  if (ticker) { clearInterval(ticker); ticker = null; }
   aggiornaNext();
+  startTs = null;
+  startBtn.disabled = selezione.size === 0;
+  resetBtn.classList.add("hidden");
+  releaseWakeLock();
+}
+
+startBtn.addEventListener("click", () => {
+  const items = [...selezione].map(id => byId[id]);
+  if (!items.length) { mostraAvviso("Seleziona almeno un alimento."); return; }
+
+  initAudio();
+  if ("Notification" in window && Notification.permission === "default") Notification.requestPermission();
+
+  startBtn.disabled = true;
+  resetBtn.classList.remove("hidden");
+  shareBtn.classList.remove("hidden");
+  logEl.innerHTML = "";
+  clearAll();
+  activeIdx = -1;
+
+  pianificaEventi(costruisciEventi(items), Date.now());
   document.getElementById("cottura").scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
@@ -1366,6 +1389,7 @@ resetBtn.addEventListener("click", () => {
   document.getElementById("timeline-list").innerHTML = "";
   startBtn.disabled = selezione.size === 0;
   resetBtn.classList.add("hidden");
+  shareBtn.classList.add("hidden");
   releaseWakeLock();
 });
 
@@ -1495,6 +1519,100 @@ function playBeep(type) {
 document.addEventListener("click", initAudio, { once: true });
 
 /* ================================================================
+   CONDIVISIONE SESSIONE (link ospite, nessun server)
+   Il timer è deterministico: nel link bastano tagli + opzioni + ora
+   di avvio, e ogni telefono ricalcola la stessa timeline in locale.
+   Limite noto: se il griller ferma/cambia, i link già inviati non
+   lo sanno (condivisione "a fotografia").
+   ================================================================ */
+function b64urlEncode(obj) {
+  return btoa(unescape(encodeURIComponent(JSON.stringify(obj))))
+    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function b64urlDecode(str) {
+  const b64 = str.replace(/-/g, "+").replace(/_/g, "/");
+  return JSON.parse(decodeURIComponent(escape(atob(b64))));
+}
+
+function linkCondivisione() {
+  const items = [...selezione].map(id => byId[id]);
+  const o = {};
+  items.filter(i => i.gradi).forEach(i => { o[i.id] = [opzioni[i.id].grado, opzioni[i.id].spessore]; });
+  const dati = { t: startTs, i: items.map(i => i.id) };
+  if (Object.keys(o).length) dati.o = o;
+  return `${location.href.split("#")[0]}#g=${b64urlEncode(dati)}`;
+}
+
+function testoCondivisione() {
+  const righe = sequenza
+    .filter(ev => ev.type === "metti")
+    .map(ev => `${formatTime(new Date(startTs + ev.tempo * 1000))} — ${ev.msg}`);
+  const fine = sequenza[sequenza.length - 1];
+  righe.push(`${formatTime(new Date(startTs + fine.tempo * 1000))} — Tutto in tavola 🍽`);
+  return `🔥 Griglia in corso!\n${righe.join("\n")}\n\nSegui la cottura in diretta:`;
+}
+
+shareBtn.addEventListener("click", async () => {
+  if (!sequenza.length || startTs === null) { mostraAvviso("Avvia prima la cottura."); return; }
+  const testo = `${testoCondivisione()}\n${linkCondivisione()}`;
+
+  if (navigator.share) {
+    try { await navigator.share({ text: testo }); return; } catch (_) { /* annullato o non riuscito: fallback */ }
+  }
+  let ok = false;
+  try { await navigator.clipboard.writeText(testo); ok = true; }
+  catch (_) {
+    const ta = document.createElement("textarea");
+    ta.value = testo; document.body.appendChild(ta);
+    ta.select(); try { ok = document.execCommand("copy"); } catch (_) {}
+    ta.remove();
+  }
+  shareBtn.textContent = ok ? "Copiato: incolla su WhatsApp ✓" : "Copia non riuscita";
+  setTimeout(() => { shareBtn.textContent = "📤 Condividi la griglia"; }, 2500);
+});
+
+/* --- modalità ospite: apre un link #g=... e segue la cottura --- */
+function bootOspite() {
+  const m = location.hash.match(/#g=([A-Za-z0-9\-_]+)/);
+  if (!m) return false;
+
+  let dati;
+  try { dati = b64urlDecode(m[1]); } catch (_) { return false; }
+  if (!dati || !Array.isArray(dati.i) || !isFinite(dati.t)) return false;
+
+  const items = dati.i.map(id => byId[id]).filter(Boolean);
+  if (!items.length) return false;
+
+  if (dati.o) {
+    Object.entries(dati.o).forEach(([id, [grado, spessore]]) => {
+      if (opzioni[id]) {
+        opzioni[id].grado = grado;
+        const s = parseFloat(spessore);
+        if (isFinite(s) && s > 0) opzioni[id].spessore = s;
+      }
+    });
+  }
+
+  document.body.classList.add("ospite");
+
+  const eventi   = costruisciEventi(items);
+  const fineMs   = dati.t + eventi[eventi.length - 1].tempo * 1000;
+  const inCorso  = Date.now() < fineMs;
+
+  const banner = document.createElement("div");
+  banner.className = "ospite-banner";
+  banner.innerHTML = inCorso
+    ? `🔥 <strong>Griglia condivisa — in corso</strong><br>Avviata alle ${formatTime(new Date(dati.t))}, in tavola alle ${formatTime(new Date(fineMs))}. Qui sotto l'andamento in tempo reale.`
+    : `✅ <strong>Griglia condivisa — completata</strong><br>Tutto in tavola alle ${formatTime(new Date(fineMs))}.`;
+  const cottura = document.getElementById("cottura");
+  cottura.insertBefore(banner, cottura.firstChild);
+
+  pianificaEventi(eventi, dati.t);
+  return true;
+}
+
+/* ================================================================
    STICKY BANNER + INIT
    ================================================================ */
 new IntersectionObserver(([entry]) => {
@@ -1505,3 +1623,4 @@ renderCatalogo();
 aggiornaContatore();
 aggiornaCarrello();
 aggiornaPiano();
+bootOspite();
