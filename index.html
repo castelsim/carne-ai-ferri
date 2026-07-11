@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="description" content="Timer professionale per la cottura alla brace: scegli cosa hai comprato, l'app genera il piano di preparazione e sincronizza le cotture per finire tutte insieme.">
   <title>Carne ai ferri — griglia sincronizzata</title>
-  <link rel="stylesheet" href="style.css?v=20260711c">
+  <link rel="stylesheet" href="style.css?v=20260711e">
 </head>
 <body>
   <noscript><p style="color:#b91c1c;font-weight:bold;">Questa applicazione richiede JavaScript attivo.</p></noscript>
@@ -48,7 +48,11 @@
         </label>
       </div>
       <div id="carrello"></div>
-      <button id="copia-lista" type="button" class="hidden">📋 Copia lista della spesa</button>
+      <div class="car-btns">
+        <button id="condividi-carrello" type="button" class="hidden">📤 Condividi spesa e preparazione</button>
+        <button id="copia-lista" type="button" class="hidden">📋 Copia</button>
+      </div>
+      <div id="sintesi"></div>
     </section>
 
     <section id="preparazione">
@@ -100,6 +104,6 @@
     Un termometro a lettura istantanea vale più di qualsiasi timer.</p>
   </footer>
 
-  <script src="script.js?v=20260711c"></script>
+  <script src="script.js?v=20260711e"></script>
 </body>
 </html>

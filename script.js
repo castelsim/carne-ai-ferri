@@ -815,6 +815,98 @@ const SPESA = {
 const byId = Object.fromEntries(CATALOGO.map(c => [c.id, c]));
 
 /* ================================================================
+   ICONE — set vettoriale line-art disegnato su griglia 64×64.
+   Stile "diagramma da macelleria": contorno 4px (classe o),
+   dettagli interni 2,5px al 55% (classe d), tutto currentColor.
+   GLIFO mappa i tagli che condividono lo stesso disegno.
+   ================================================================ */
+const ICONE = {
+  /* — manzo — */
+  bistecca: `<path class="o" d="M12 34 C10 22 20 14 33 14 C46 14 55 22 53 33 C51 44 41 51 29 50 C18 49 14 43 12 34 Z"/><path class="d" d="M17 24 C23 17 31 15 41 16"/><path class="d" d="M24 31 l8 6"/><path class="d" d="M36 26 l6 5"/>`,
+  costata: `<path class="o" d="M14 20 C24 10 44 10 52 20 C58 28 56 42 46 50 C36 56 20 54 14 44 C10 37 10 27 14 20 Z"/><path class="d" d="M22 19 H44"/><path class="d" d="M33 19 V43"/>`,
+  filetto_manzo: `<circle class="o" cx="32" cy="34" r="16"/><path class="d" d="M17 29 C27 26 37 26 47 29"/><path class="d" d="M17 39 C27 42 37 42 47 39"/>`,
+  tagliata: `<path class="o" d="M10 40 C10 30 18 24 30 23 C44 22 54 28 54 36 C54 44 44 48 30 48 C18 48 10 46 10 40 Z"/><path class="d" d="M25 24 L21 47"/><path class="d" d="M35 23 L31 48"/><path class="d" d="M45 26 L41 47"/>`,
+  hamburger: `<path class="o" d="M13 27 C13 16 51 16 51 27 L13 27 Z"/><path class="o" d="M12 35 H52"/><path class="o" d="M15 43 H49 C52 43 52 50 49 50 H15 C12 50 12 43 15 43 Z"/><path class="d" d="M23 21 h.2 M31 20 h.2 M39 21 h.2"/>`,
+  spiedino: `<path class="o" d="M14 54 L50 10"/><circle class="o" cx="52" cy="8" r="3"/><path class="o" d="M24 35 L31 42 L24 49 L17 42 Z"/><path class="o" d="M32 25 L39 32 L32 39 L25 32 Z"/><path class="o" d="M40 15 L47 22 L40 29 L33 22 Z"/>`,
+  picanha: `<path class="o" d="M10 46 L34 14 C38 9 46 11 48 17 L54 38 C56 46 48 52 40 50 Z"/><path class="d" d="M15 44 L37 15"/><path class="d" d="M30 44 l14 -14"/>`,
+  bavetta: `<path class="o" d="M10 42 L22 22 H54 L42 42 Z"/><path class="d" d="M18 38 L28 24"/><path class="d" d="M26 38 L36 24"/><path class="d" d="M34 38 L44 24"/>`,
+  asado: `<path class="o" d="M12 26 H52 C56 26 56 38 52 38 H12 C8 38 8 26 12 26 Z"/><circle class="d" cx="20" cy="32" r="3.5"/><circle class="d" cx="32" cy="32" r="3.5"/><circle class="d" cx="44" cy="32" r="3.5"/>`,
+  /* — vitello — */
+  nodino_vitello: `<path class="o" d="M16 20 C28 12 48 14 51 27 C53 37 46 48 34 50 C21 52 12 43 12 31 C12 26 13 23 16 20 Z"/><circle class="d" cx="23" cy="30" r="5"/><path class="d" d="M34 34 l8 5"/>`,
+  braciola: `<path class="o" d="M12 27 C12 18 22 13 33 13 C45 13 52 20 52 28 C52 37 43 42 31 42 C20 42 12 36 12 27 Z"/><path class="o" d="M40 41 L45 51 C46 54 51 53 50 49 L46 39"/><circle class="d" cx="24" cy="27" r="4.5"/><path class="d" d="M34 20 l8 3"/>`,
+  /* — maiale — */
+  salsiccia: `<path class="o" d="M14 40 A18 18 0 1 1 50 40 L42 40 A10 10 0 1 0 22 40 Z"/><path class="o" d="M12 43 l-5 4 M52 43 l5 4"/><path class="d" d="M32 14 V24"/>`,
+  luganega: `<path class="o" d="M31 32 a3 3 0 0 1 6 0 a7 7 0 0 1 -14 0 a11 11 0 0 1 22 0 a15 15 0 0 1 -30 0"/><path class="d" d="M8 32 H14 M50 32 H58"/>`,
+  salamella: `<path class="o" d="M23 45 L47 37 A9 9 0 0 0 41 20 L17 28 A9 9 0 0 0 23 45 Z"/><path class="o" d="M14 30 l-5 -1"/><path class="o" d="M50 26 l5 -2"/>`,
+  costine: `<path class="o" d="M12 22 C24 14 40 14 52 22"/><path class="o" d="M12 42 C24 50 40 50 52 42"/><path class="o" d="M18 23 V43"/><path class="o" d="M27 19 V47"/><path class="o" d="M37 19 V47"/><path class="o" d="M46 23 V43"/>`,
+  pancetta: `<path class="o" d="M10 22 C16 17 22 27 28 22 C34 17 40 27 46 22 L54 21 L54 40 C48 45 42 35 36 40 C30 45 24 35 18 40 L10 41 Z"/><path class="d" d="M12 29 C18 24 24 34 30 29 C36 24 42 34 48 29"/><path class="d" d="M12 35 C18 30 24 40 30 35 C36 30 42 40 48 35"/>`,
+  wurstel: `<path class="o" d="M19 46 L51 34 A8 8 0 0 0 45 19 L13 31 A8 8 0 0 0 19 46 Z"/><path class="d" d="M25 27 l4 7 M33 24 l4 7 M41 21 l4 7"/>`,
+  filetto_maiale: `<path class="o" d="M10 36 C10 28 18 24 28 23 C40 22 52 26 54 31 C55 35 48 39 38 40 C26 42 10 42 10 36 Z"/><path class="d" d="M22 25 V41 M32 24 V41 M42 25 V39"/>`,
+  capocollo: `<path class="o" d="M32 18 C46 18 53 25 53 33 C53 41 46 48 32 48 C18 48 11 41 11 33 C11 25 18 18 32 18 Z"/><circle class="d" cx="25" cy="29" r="2.5"/><circle class="d" cx="36" cy="26" r="2.5"/><circle class="d" cx="30" cy="38" r="2.5"/><circle class="d" cx="40" cy="36" r="2.5"/>`,
+  bombette: `<path class="o" d="M16 52 L48 12"/><circle class="o" cx="26" cy="40" r="6.5"/><circle class="o" cx="33" cy="31" r="6.5"/><circle class="o" cx="40" cy="22" r="6.5"/>`,
+  stinco: `<path class="o" d="M37 20 L43 9"/><circle class="o" cx="45" cy="7" r="3"/><circle class="o" cx="40" cy="5" r="3"/><path class="o" d="M37 20 C50 24 56 36 50 46 C43 55 26 57 17 48 C9 40 12 27 23 22 C28 20 33 19 37 20 Z"/><path class="d" d="M20 44 C26 50 38 50 45 44"/>`,
+  /* — pollo / tacchino — */
+  petto_pollo: `<path class="o" d="M40 12 C52 18 54 34 46 44 C38 52 24 52 17 44 C11 36 12 26 20 22 C28 18 34 12 40 12 Z"/><path class="d" d="M24 40 C30 44 38 42 42 36"/>`,
+  coscia_pollo: `<path class="o" d="M42 12 C53 17 56 31 48 40 C42 47 31 48 25 42 C19 36 20 25 27 18 C31 14 37 10 42 12 Z"/><path class="o" d="M25 42 L16 51"/><circle class="o" cx="12" cy="55" r="4"/><circle class="o" cx="19" cy="58" r="4"/><path class="d" d="M32 20 C27 25 26 32 29 37"/>`,
+  ali_pollo: `<path class="o" d="M16 49 L32 37 A6.5 6.5 0 0 0 24 27 L8 39 A6.5 6.5 0 0 0 16 49 Z"/><path class="o" d="M29 38 L45 42 A5 5 0 0 0 47 32 L31 28 A5 5 0 0 0 29 38 Z"/><path class="o" d="M50 41 L57 45"/><path class="d" d="M18 40 l8 -6"/>`,
+  galletto: `<path class="o" d="M32 16 C39 16 43 23 43 33 C43 44 39 50 32 50 C25 50 21 44 21 33 C21 23 25 16 32 16 Z"/><path class="o" d="M22 24 C14 22 8 28 10 35 C11 40 16 42 21 40"/><path class="o" d="M42 24 C50 22 56 28 54 35 C53 40 48 42 43 40"/><path class="o" d="M25 49 C22 53 18 56 13 56"/><path class="o" d="M39 49 C42 53 46 56 51 56"/><path class="d" d="M32 22 V44"/>`,
+  fesa_tacchino: `<path class="o" d="M17 20 H49 C53 20 55 23 54 27 L51 41 C50 45 47 46 43 46 H17 C13 46 11 43 12 39 L13 25 C13 22 14 20 17 20 Z"/><path class="d" d="M20 27 H46 M19 33 H45 M18 39 H44"/>`,
+  /* — agnello — */
+  costolette_agnello: `<circle class="o" cx="24" cy="40" r="9"/><path class="o" d="M31 33 L52 12"/><circle class="o" cx="54" cy="10" r="2.5"/><path class="d" d="M18 42 a7 7 0 0 0 10 3"/>`,
+  arrosticini: `<path class="o" d="M12 22 H52 M12 32 H52 M12 42 H52"/><path class="d" d="M22 19 V25 M30 19 V25 M38 19 V25 M22 29 V35 M30 29 V35 M38 29 V35 M22 39 V45 M30 39 V45 M38 39 V45"/>`,
+  cosciotto_agnello: `<path class="o" d="M14 26 C20 16 36 12 46 18 C54 23 56 34 50 42 C44 50 30 52 20 46 C12 41 10 33 14 26 Z"/><circle class="o" cx="39" cy="29" r="4.5"/><path class="d" d="M19 38 C24 42 30 43 36 41"/><path class="d" d="M22 24 l7 -3"/>`,
+  /* — pesce & mare — */
+  salmone: `<path class="o" d="M12 22 L52 18 C54 30 46 42 32 46 C22 49 13 44 12 36 Z"/><path class="d" d="M24 21 C25 29 23 37 19 43"/><path class="d" d="M34 20 C35 28 33 36 29 43"/><path class="d" d="M44 19 C45 26 43 33 39 40"/>`,
+  gamberoni: `<path class="o" d="M44 14 C58 22 56 40 42 47 C33 51 22 48 18 41 C24 44 32 44 38 40 C46 35 48 24 44 14 Z"/><path class="o" d="M18 41 L10 36 M18 41 L12 47"/><path class="d" d="M44 22 C41 24 38 24 35 23 M46 30 C43 32 40 32 37 31"/><path class="d" d="M44 14 C40 8 32 6 26 8"/>`,
+  trancio: `<circle class="o" cx="32" cy="33" r="19"/><circle class="o" cx="32" cy="33" r="3"/><path class="d" d="M15 26 A19 19 0 0 1 32 14"/>`,
+  branzino: `<path class="o" d="M10 32 C18 20 38 18 48 26 L56 20 C55 28 55 36 56 44 L48 38 C38 46 18 44 10 32 Z"/><path class="o" d="M20 29 h.2"/><path class="d" d="M26 24 C24 28 24 36 26 40"/>`,
+  calamari: `<path class="o" d="M32 8 C38 8 42 14 42 24 L42 34 C42 38 38 40 32 40 C26 40 22 38 22 34 L22 24 C22 14 26 8 32 8 Z"/><path class="o" d="M22 16 L12 22 L22 26"/><path class="o" d="M42 16 L52 22 L42 26"/><path class="o" d="M26 40 C25 46 24 50 20 54 M32 40 V56 M38 40 C39 46 40 50 44 54"/><path class="d" d="M29 40 C28 46 28 49 26 52 M35 40 C36 46 36 49 38 52"/>`,
+  sardine: `<path class="o" d="M10 22 C16 15 26 15 31 21 C26 27 16 28 10 22 Z"/><path class="o" d="M31 21 L38 16 M31 21 L38 25"/><path class="o" d="M16 20.5 h.2"/><path class="o" d="M22 40 C28 33 38 33 43 39 C38 45 28 46 22 40 Z"/><path class="o" d="M43 39 L50 34 M43 39 L50 43"/><path class="o" d="M28 38.5 h.2"/>`,
+  /* — verdure — */
+  zucchine: `<path class="o" d="M31 54 L47 22 A8 8 0 0 0 33 15 L17 47 A8 8 0 0 0 31 54 Z"/><path class="o" d="M41 14 l4 -6"/><path class="d" d="M25 44 L38 20 M31 48 L44 24"/>`,
+  peperoni: `<path class="o" d="M32 20 C26 14 15 18 14 28 C13 40 22 50 32 50 C42 50 51 40 50 28 C49 18 38 14 32 20 Z"/><path class="o" d="M32 18 C32 12 36 10 38 10"/><path class="d" d="M24 22 C24 34 26 42 30 48 M40 22 C40 34 38 42 34 48"/>`,
+  melanzane: `<path class="o" d="M42 18 C50 24 52 36 44 44 C36 52 22 52 16 44 C11 37 14 28 22 26 C30 24 36 22 42 18 Z"/><path class="o" d="M44 16 C46 12 50 10 54 10"/><path class="d" d="M36 18 C40 14 44 13 48 14"/><path class="d" d="M42 24 C46 20 50 18 53 18"/>`,
+  cipolla: `<path class="o" d="M12 40 A20 20 0 0 1 52 40"/><path class="d" d="M18 40 A14 14 0 0 1 46 40"/><path class="d" d="M24 40 A8 8 0 0 1 40 40"/><path class="o" d="M12 40 H52"/><path class="d" d="M28 44 v6 M32 44 v7 M36 44 v6"/>`,
+  mais: `<path class="o" d="M32 10 C40 10 44 18 44 32 C44 46 40 54 32 54 C24 54 20 46 20 32 C20 18 24 10 32 10 Z"/><path class="d" d="M27 13 V51 M37 13 V51"/><path class="d" d="M21 22 H43 M20 32 H44 M21 42 H43"/>`,
+  funghi: `<path class="o" d="M12 30 C12 16 52 16 52 30 C52 34 46 34 40 34 H24 C18 34 12 34 12 30 Z"/><path class="o" d="M26 34 C26 44 24 50 22 52 H42 C40 50 38 44 38 34"/><path class="d" d="M20 30 V33 M28 31 V34 M36 31 V34 M44 30 V33"/>`,
+  radicchio: `<path class="o" d="M14 50 C12 34 20 18 32 12 C34 22 34 30 32 36 C40 30 46 22 50 16 C52 28 46 42 34 48 C28 51 20 52 14 50 Z"/><path class="d" d="M20 46 C24 36 28 26 32 16 M26 48 C32 40 38 30 44 22"/>`,
+  patate: `<path class="o" d="M16 32 C14 24 22 16 32 16 C44 16 52 24 50 34 C48 44 38 50 27 48 C18 46 17 40 16 32 Z"/><path class="d" d="M24 26 l2 2 M38 24 l2 2 M30 38 l2 2 M42 34 l2 2 M22 36 l2 2"/>`,
+  /* — categorie (teste/simboli) — */
+  cat_manzo: `<path class="o" d="M16 14 C10 10 8 18 14 20"/><path class="o" d="M48 14 C54 10 56 18 50 20"/><path class="o" d="M22 16 C26 12 38 12 42 16 C48 20 48 30 44 38 C42 46 36 50 32 50 C28 50 22 46 20 38 C16 30 16 20 22 16 Z"/><path class="d" d="M24 40 C26 46 38 46 40 40"/><path class="d" d="M27 43 h.2 M37 43 h.2"/><path class="d" d="M26 28 h.2 M38 28 h.2"/>`,
+  cat_vitello: `<path class="o" d="M22 16 C26 12 38 12 42 16 C48 20 48 30 44 38 C42 46 36 50 32 50 C28 50 22 46 20 38 C16 30 16 20 22 16 Z"/><path class="o" d="M18 22 C12 20 10 25 16 27"/><path class="o" d="M46 22 C52 20 54 25 48 27"/><path class="d" d="M28 14 C30 10 34 10 36 14"/><path class="d" d="M24 40 C26 46 38 46 40 40"/><path class="d" d="M26 28 h.2 M38 28 h.2"/>`,
+  cat_maiale: `<path class="o" d="M32 14 C44 14 52 24 52 34 C52 44 44 50 32 50 C20 50 12 44 12 34 C12 24 20 14 32 14 Z"/><path class="o" d="M19 19 L14 9 L26 13"/><path class="o" d="M45 19 L50 9 L38 13"/><path class="o" d="M26 34 C26 29 38 29 38 34 C38 39 26 39 26 34 Z"/><path class="d" d="M29 34 v.2 M35 34 v.2"/><path class="d" d="M23 25 h.2 M41 25 h.2"/>`,
+  cat_pollo: `<path class="o" d="M28 14 C28 10 32 10 32 14 C32 10 36 10 36 14 C36 11 40 11 40 15"/><path class="o" d="M26 22 C26 14 40 12 44 20 C46 26 44 30 40 32 C36 34 30 34 27 30 C25 27 25 25 26 22 Z"/><path class="o" d="M44 24 L52 26 L44 29"/><path class="d" d="M40 32 C40 37 36 38 35 34"/><path class="o" d="M34 22 h.2"/>`,
+  cat_tacchino: `<path class="o" d="M10 32 A26 26 0 0 1 54 32"/><path class="d" d="M32 48 L14 34 M32 48 L23 22 M32 48 L32 16 M32 48 L41 22 M32 48 L50 34"/><path class="o" d="M32 50 C28 50 26 46 26 41 C26 35 28 32 32 32 C36 32 38 35 38 41 C38 46 36 50 32 50 Z"/><path class="d" d="M38 36 l5 2"/>`,
+  cat_agnello: `<path class="o" d="M16 30 C10 30 10 21 18 20 C18 12 30 10 33 16 C38 10 50 14 48 21 C56 22 56 31 48 32 C50 39 41 43 35 39 C31 45 19 43 17 36 C13 36 12 31 16 30 Z"/><path class="o" d="M26 30 C26 24 38 24 38 30 C38 38 34 42 32 42 C30 42 26 38 26 30 Z"/><path class="d" d="M29 30 h.2 M35 30 h.2"/><path class="d" d="M24 27 C20 25 18 29 22 31 M40 27 C44 25 46 29 42 31"/>`,
+  cat_pesce: `<path class="o" d="M10 32 C18 20 38 18 48 26 L56 20 C55 28 55 36 56 44 L48 38 C38 46 18 44 10 32 Z"/><path class="o" d="M20 29 h.2"/><path class="d" d="M26 24 C24 28 24 36 26 40"/>`,
+  cat_verdure: `<path class="o" d="M16 48 C12 28 28 12 50 14 C52 34 38 50 20 50 C18 50 17 49 16 48 Z"/><path class="d" d="M20 46 C26 36 36 24 46 18"/><path class="d" d="M24 40 C30 40 34 36 36 32 M32 30 C30 26 30 22 32 18"/>`,
+};
+
+const GLIFO = {
+  costata: "costata", spiedini_manzo: "spiedino", spiedini_vitello: "spiedino",
+  spiedini_maiale: "spiedino", spiedini_pollo: "spiedino", spiedini_tacchino: "spiedino",
+  spiedini_agnello: "spiedino",
+  tagliata_vitello: "tagliata", braciola_vitello: "braciola", braciola: "braciola",
+  costoletta: "braciola", salsiccia_vitello: "salsiccia",
+  hamburger_tacchino: "hamburger", coscia_tacchino: "coscia_pollo",
+  spada: "trancio",
+};
+
+function svgIcona(chiave, extra) {
+  const markup = ICONE[chiave];
+  if (!markup) return "";
+  return `<svg class="ico${extra ? " " + extra : ""}" viewBox="0 0 64 64" aria-hidden="true">${markup}</svg>`;
+}
+
+function iconaItem(item) {
+  return svgIcona(GLIFO[item.id] || item.id) || `<span class="ico-emoji">${item.icona}</span>`;
+}
+
+function chipItem(item) {
+  return `<span class="chip chip-${item.categoria}">${iconaItem(item)}</span>`;
+}
+
+/* ================================================================
    STATO
    ================================================================ */
 const selezione = new Set();
@@ -891,7 +983,8 @@ function renderCatalogo() {
     head.type = "button";
     head.className = "cat-head";
     head.setAttribute("aria-expanded", "false");
-    head.innerHTML = `<span class="cat-titolo">${cat.icona} ${cat.nome}</span>
+    head.innerHTML = `<span class="chip chip-${cat.id}">${svgIcona("cat_" + cat.id) || cat.icona}</span>
+      <span class="cat-titolo">${cat.nome}</span>
       <span class="cat-count">${items.length} tagli</span>
       <span class="cat-chev" aria-hidden="true">▾</span>`;
     head.addEventListener("click", () => {
@@ -914,7 +1007,7 @@ function renderCatalogo() {
       card.tabIndex = 0;
 
       card.innerHTML = `
-        <span class="food-icon">${item.icona}</span>
+        ${chipItem(item)}
         <span class="food-name">${item.nome}</span>
         <span class="food-time" data-time="${item.id}">${fmtMin(cotturaSec(item))}</span>
         <span class="food-badges">
@@ -1049,7 +1142,7 @@ function apriScheda(id) {
   const item = byId[id];
   if (!item) return;
   const s = item.scheda;
-  document.getElementById("scheda-titolo").textContent = `${item.icona} ${item.nome}`;
+  document.getElementById("scheda-titolo").innerHTML = `${chipItem(item)} ${item.nome}`;
   document.getElementById("scheda-meta").innerHTML = `
     <span class="badge badge-${item.metodo}">${item.metodo}</span>
     <span class="badge badge-calore">calore ${item.calore}</span>
@@ -1075,17 +1168,166 @@ document.getElementById("scheda-close").addEventListener("click", chiudiScheda);
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") chiudiScheda(); });
 
 /* ================================================================
+   SINTESI OPERATIVA — raggruppa i tagli del carrello per trattamento
+   (una marinata unica, la salatura anticipata insieme, ecc.)
+   TRATT: classificazione per i tagli senza marinatura/salaPrima.
+   NOTE_PREP: promemoria breve per riga (fallback: niente nota).
+   ================================================================ */
+const TRATT = {
+  costata: "nudo",      tagliata: "salesubito",  hamburger: "salesubito",
+  picanha: "salesubito", asado: "salesubito",
+  braciola_vitello: "salesubito", tagliata_vitello: "salesubito", salsiccia_vitello: "olio",
+  salsiccia: "nudo",    luganega: "nudo",        salamella: "olio",
+  pancetta: "nudo",     braciola: "salesubito",  wurstel: "nudo",
+  capocollo: "salesubito", bombette: "nudo",     stinco: "olio",
+  hamburger_tacchino: "olio",
+  arrosticini: "nudo",
+  salmone: "olio", gamberoni: "olio", branzino: "olio", calamari: "olio", sardine: "olio",
+  zucchine: "olio", peperoni: "olio", melanzane: "olio", cipolla: "olio",
+  mais: "olio", funghi: "olio", radicchio: "olio", patate: "olio",
+};
+
+const NOTE_PREP = {
+  bistecca: "sale abbondante su tutti i lati, poi su una gratella a temperatura ambiente",
+  costata: "tradizione: niente prima — sale in scaglie e olio a fine cottura",
+  filetto_manzo: "sale 40+ min prima; un filo d'olio (è magrissimo)",
+  tagliata: "sala subito prima: è sottile",
+  hamburger: "sala solo la superficie, mai l'impasto; fossetta al centro",
+  spiedini_manzo: "olio, aglio, rosmarino",
+  picanha: "solo sale grosso, come in Brasile",
+  bavetta: "olio, soia (o limone) e aglio: le fibre aperte la assorbono",
+  asado: "solo sale grosso",
+  nodino_vitello: "sale 40+ min prima; filo d'olio",
+  braciola_vitello: "olio leggero e sale subito prima",
+  tagliata_vitello: "sala subito prima",
+  spiedini_vitello: "olio, limone, salvia o rosmarino",
+  salsiccia_vitello: "filo d'olio; NON bucarla",
+  salsiccia: "niente: NON bucarla",
+  luganega: "a chiocciola con due spiedi incrociati; non bucarla",
+  salamella: "pennellata d'olio; non bucarla",
+  costine: "rub: sale, pepe, paprika dolce, zucchero di canna, aglio; via la pleura",
+  pancetta: "niente: è già condita dal suo grasso",
+  braciola: "filo d'olio e sale subito prima; incidi il bordo di grasso",
+  costoletta: "sale 40+ min prima; incidi il grasso sul bordo",
+  wurstel: "taglietti diagonali facoltativi",
+  filetto_maiale: "sale o rub 40+ min prima; via la pellicina argentata",
+  capocollo: "solo sale leggero, niente olio",
+  bombette: "infilale ben strette su uno spiedo d'acciaio",
+  spiedini_maiale: "olio, aglio, rosmarino, paprika",
+  stinco: "olio e paprika; prepara la glassa (miele+senape) per il finale",
+  petto_pollo: "salamoia 30 min (1 l acqua + 60 g sale) o marinata olio-limone-erbe",
+  coscia_pollo: "olio, limone, paprika, aglio; pelle ben asciutta",
+  ali_pollo: "rub: paprika affumicata, aglio, pepe",
+  galletto: "olio, limone, peperoncino, rosmarino, aglio; schiacciato bene",
+  spiedini_pollo: "yogurt oppure olio-limone-paprika",
+  fesa_tacchino: "salamoia 30 min o marinata olio-limone",
+  coscia_tacchino: "rub o marinata: paprika, aglio, rosmarino",
+  spiedini_tacchino: "yogurt o olio-limone (obbligatoria per la fesa)",
+  hamburger_tacchino: "filo d'olio; fossetta al centro",
+  costolette_agnello: "olio, aglio, rosmarino, timo",
+  spiedini_agnello: "olio, limone, aglio, origano o cumino",
+  arrosticini: "tradizione: nudi — sale SOLO a fine cottura",
+  cosciotto_agnello: "olio, aglio, rosmarino, limone",
+  salmone: "asciuga benissimo; olio e sale; griglia pulitissima",
+  gamberoni: "olio, aglio e prezzemolo 15 min prima",
+  spada: "olio-limone-origano, max 20-30 min (il limone lo 'cuoce')",
+  branzino: "erbe e limone nel ventre, olio fuori; NON squamarlo",
+  calamari: "asciugali BENISSIMO, olio e sale",
+  sardine: "olio e sale grosso; gratella a libro",
+  zucchine: "olio prima, sale DOPO la cottura",
+  peperoni: "a falde con un filo d'olio",
+  melanzane: "pennellata d'olio poco prima (assorbono), sale dopo",
+  cipolla: "rondelle da 1,5 cm con stuzzicadenti; olio leggero",
+  mais: "sbucciate e oliate",
+  funghi: "olio, aglio e prezzemolo nella cappella; non lavarli",
+  radicchio: "a quarti col torsolo; olio e sale prima",
+  patate: "prelessate 10 min con la buccia, poi a fette con olio e rosmarino",
+};
+
+const GRUPPI_TRATT = [
+  { chiave: "marinata60", icona: "🥣", titolo: "Marinatura / rub", quando: "1 h prima (o ieri sera)" },
+  { chiave: "marinata30", icona: "🥣", titolo: "Marinatura breve", quando: "30 min prima" },
+  { chiave: "sale40",     icona: "🧂", titolo: "Salatura anticipata", quando: "40+ min prima" },
+  { chiave: "salesubito", icona: "🧂", titolo: "Sale subito prima", quando: "alla griglia" },
+  { chiave: "olio",       icona: "🫒", titolo: "Solo olio, poco prima", quando: "alla griglia" },
+  { chiave: "nudo",       icona: "✋", titolo: "Niente trattamento", quando: "—" },
+];
+
+function gruppoDi(item) {
+  if (item.marinatura >= 60) return "marinata60";
+  if (item.marinatura > 0)   return "marinata30";
+  if (item.salaPrima)        return "sale40";
+  return TRATT[item.id] || "salesubito";
+}
+
+function sintesiGruppi(items) {
+  const perGruppo = {};
+  items.forEach(i => { (perGruppo[gruppoDi(i)] = perGruppo[gruppoDi(i)] || []).push(i); });
+  return GRUPPI_TRATT
+    .filter(g => perGruppo[g.chiave])
+    .map(g => ({ ...g, items: perGruppo[g.chiave] }));
+}
+
+function primaFrase(testo) {
+  const i = testo.indexOf(". ");
+  return i === -1 ? testo.replace(/\.\s*$/, "") : testo.slice(0, i);
+}
+
+function renderSintesi(items) {
+  if (!items.length) return "";
+  const gruppi = sintesiGruppi(items);
+
+  const blocchi = gruppi.map(g => {
+    const insieme = g.chiave.startsWith("marinata") && g.items.length > 1
+      ? `<p class="sint-tip">Ottimizza: una base unica (olio + aglio) in una ciotola sola, dividi nei sacchetti e personalizza con le note qui sotto.</p>`
+      : "";
+    const righe = g.items.map(i =>
+      `<li><strong>${i.nome}</strong>${NOTE_PREP[i.id] ? ` — ${NOTE_PREP[i.id]}` : ""}</li>`).join("");
+    return `
+      <div class="sint-blocco">
+        <div class="sint-head">${g.icona} ${g.titolo}<span class="sint-quando">${g.quando}</span></div>
+        <ul class="sint-lista">${righe}</ul>
+        ${insieme}
+      </div>`;
+  }).join("");
+
+  const acquisti = items.map(i => `<li><strong>${i.nome}</strong>: ${primaFrase(i.scheda.acquisto)}</li>`).join("");
+
+  return `
+    <h3 class="sint-titolo">Come preparare quello che hai scelto</h3>
+    ${blocchi}
+    <div class="sint-blocco">
+      <div class="sint-head">🛒 Promemoria per l'acquisto<span class="sint-quando">al banco</span></div>
+      <ul class="sint-lista">${acquisti}</ul>
+    </div>`;
+}
+
+function sintesiTesto(items) {
+  if (!items.length) return "";
+  const gruppi = sintesiGruppi(items);
+  const blocchi = gruppi.map(g => {
+    const righe = g.items.map(i => `  • ${i.nome}${NOTE_PREP[i.id] ? `: ${NOTE_PREP[i.id]}` : ""}`).join("\n");
+    const tip = g.chiave.startsWith("marinata") && g.items.length > 1 ? "\n  → una ciotola unica, poi dividi nei sacchetti" : "";
+    return `${g.icona} ${g.titolo} (${g.quando})\n${righe}${tip}`;
+  }).join("\n");
+  const acquisti = items.map(i => `  • ${i.nome}: ${primaFrase(i.scheda.acquisto)}`).join("\n");
+  return `\n\nCOME PREPARARLO\n${blocchi}\n🛒 Al banco\n${acquisti}`;
+}
+
+/* ================================================================
    CARRELLO + QUANTITÀ DA COMPRARE
    Dosi (fonti IT): 300 g/adulto di carne netta (450 g appetito forte),
    bambini 50%, −20% se contorni e pane abbondanti. La quota si divide
    tra i "secondi" nel carrello; SPESA converte in peso crudo e pezzi.
    ================================================================ */
 const carrelloEl  = document.getElementById("carrello");
+const sintesiEl   = document.getElementById("sintesi");
 const adultiEl    = document.getElementById("q-adulti");
 const bambiniEl   = document.getElementById("q-bambini");
 const appetitoEl  = document.getElementById("q-appetito");
 const contorniEl  = document.getElementById("q-contorni");
 const copiaBtn    = document.getElementById("copia-lista");
+const shareCarBtn = document.getElementById("condividi-carrello");
 
 [adultiEl, bambiniEl, appetitoEl, contorniEl].forEach(el =>
   el.addEventListener("input", aggiornaCarrello));
@@ -1123,15 +1365,18 @@ function calcolaSpesa() {
 function aggiornaCarrello() {
   if (selezione.size === 0) {
     carrelloEl.innerHTML = `<p class="piano-vuoto">Il carrello è vuoto: seleziona i tagli qui sopra.</p>`;
+    sintesiEl.innerHTML = "";
     copiaBtn.classList.add("hidden");
+    shareCarBtn.classList.add("hidden");
     return;
   }
+  sintesiEl.innerHTML = renderSintesi([...selezione].map(id => byId[id]));
 
   const { totale, righe, contorni } = calcolaSpesa();
 
   const righeHtml = righe.map(r => `
     <li>
-      <span class="car-icona">${r.item.icona}</span>
+      <span class="car-icona">${chipItem(r.item)}</span>
       <span class="car-nome">${r.item.nome}</span>
       <span class="car-qta">${fmtPeso(r.crudo)}${r.pezzi ? ` <em>(≈ ${r.pezzi} ${r.unita})</em>` : ""}</span>
       <button type="button" class="car-x" data-rimuovi="${r.item.id}" aria-label="Togli ${r.item.nome}">✕</button>
@@ -1139,7 +1384,7 @@ function aggiornaCarrello() {
 
   const contorniHtml = contorni.length ? `
     <li class="car-contorni">
-      <span class="car-icona">🥗</span>
+      <span class="car-icona"><span class="chip chip-verdure">${svgIcona("cat_verdure")}</span></span>
       <span class="car-nome">Contorni: ${contorni.map(c => c.nome).join(", ")}</span>
       <span class="car-qta"><em>~200 g a testa in tutto</em></span>
       <span></span>
@@ -1152,7 +1397,8 @@ function aggiornaCarrello() {
   carrelloEl.querySelectorAll("[data-rimuovi]").forEach(btn =>
     btn.addEventListener("click", () => toggleItem(btn.dataset.rimuovi)));
 
-  copiaBtn.classList.toggle("hidden", righe.length === 0);
+  copiaBtn.classList.remove("hidden");
+  shareCarBtn.classList.remove("hidden");
 }
 
 function listaSpesaTesto() {
@@ -1161,7 +1407,7 @@ function listaSpesaTesto() {
   const corpo = righe.map(r =>
     `• ${r.item.nome}: ${fmtPeso(r.crudo)}${r.pezzi ? ` (circa ${r.pezzi} ${r.unita})` : ""}`).join("\n");
   const coda = contorni.length ? `\nContorni: ${contorni.map(c => c.nome).join(", ")} (~200 g a testa in tutto)` : "";
-  return `${testa}\n${corpo}${coda}`;
+  return `${testa}\n${corpo}${coda}${sintesiTesto([...selezione].map(id => byId[id]))}`;
 }
 
 copiaBtn.addEventListener("click", async () => {
@@ -1175,7 +1421,7 @@ copiaBtn.addEventListener("click", async () => {
     ta.remove();
   }
   copiaBtn.textContent = ok ? "Copiata ✓" : "Copia non riuscita";
-  setTimeout(() => { copiaBtn.textContent = "📋 Copia lista della spesa"; }, 2000);
+  setTimeout(() => { copiaBtn.textContent = "📋 Copia lista spesa + preparazione"; }, 2000);
 });
 
 /* ================================================================
@@ -1553,12 +1799,30 @@ function testoCondivisione() {
   return `🔥 Griglia in corso!\n${righe.join("\n")}\n\nSegui la cottura in diretta:`;
 }
 
-shareBtn.addEventListener("click", async () => {
+shareBtn.addEventListener("click", () => {
   if (!sequenza.length || startTs === null) { mostraAvviso("Avvia prima la cottura."); return; }
-  const testo = `${testoCondivisione()}\n${linkCondivisione()}`;
+  condividiTesto(`${testoCondivisione()}\n${linkCondivisione()}`, shareBtn, "📤 Condividi la griglia");
+});
 
+/* --- condivisione del carrello + preparazione (link #c=...) ---
+   Per chi cucina: apre l'app con selezione, persone e orario già
+   caricati — carrello, sintesi operativa e piano pronti all'uso. --- */
+function linkCarrello() {
+  const items = [...selezione].map(id => byId[id]);
+  const o = {};
+  items.filter(i => i.gradi).forEach(i => { o[i.id] = [opzioni[i.id].grado, opzioni[i.id].spessore]; });
+  const dati = {
+    i: items.map(i => i.id),
+    p: [adultiEl.value, bambiniEl.value, appetitoEl.value, contorniEl.value],
+  };
+  if (Object.keys(o).length) dati.o = o;
+  if (prontoAlleEl.value) dati.h = prontoAlleEl.value;
+  return `${location.href.split("#")[0]}#c=${b64urlEncode(dati)}`;
+}
+
+async function condividiTesto(testo, btn, etichetta) {
   if (navigator.share) {
-    try { await navigator.share({ text: testo }); return; } catch (_) { /* annullato o non riuscito: fallback */ }
+    try { await navigator.share({ text: testo }); return; } catch (_) { /* annullato: fallback */ }
   }
   let ok = false;
   try { await navigator.clipboard.writeText(testo); ok = true; }
@@ -1568,9 +1832,70 @@ shareBtn.addEventListener("click", async () => {
     ta.select(); try { ok = document.execCommand("copy"); } catch (_) {}
     ta.remove();
   }
-  shareBtn.textContent = ok ? "Copiato: incolla su WhatsApp ✓" : "Copia non riuscita";
-  setTimeout(() => { shareBtn.textContent = "📤 Condividi la griglia"; }, 2500);
+  btn.textContent = ok ? "Copiato: incolla su WhatsApp ✓" : "Copia non riuscita";
+  setTimeout(() => { btn.textContent = etichetta; }, 2500);
+}
+
+shareCarBtn.addEventListener("click", () => {
+  if (!selezione.size) return;
+  const testo = `${listaSpesaTesto()}\n\nApri tutto nell'app (carrello, preparazione e timer):\n${linkCarrello()}`;
+  condividiTesto(testo, shareCarBtn, "📤 Condividi spesa e preparazione");
 });
+
+function bootCarrello() {
+  const m = location.hash.match(/#c=([A-Za-z0-9\-_]+)/);
+  if (!m) return false;
+
+  let dati;
+  try { dati = b64urlDecode(m[1]); } catch (_) { return false; }
+  if (!dati || !Array.isArray(dati.i)) return false;
+
+  const ids = dati.i.filter(id => byId[id]);
+  if (!ids.length) return false;
+
+  if (Array.isArray(dati.p)) {
+    const [a, b, ap, co] = dati.p;
+    if (a !== undefined) adultiEl.value = a;
+    if (b !== undefined) bambiniEl.value = b;
+    if (ap === "normale" || ap === "abbondante") appetitoEl.value = ap;
+    if (co === "pochi" || co === "abbondanti") contorniEl.value = co;
+  }
+  if (typeof dati.h === "string" && /^\d{2}:\d{2}$/.test(dati.h)) prontoAlleEl.value = dati.h;
+
+  if (dati.o) {
+    Object.entries(dati.o).forEach(([id, [grado, spessore]]) => {
+      if (!opzioni[id]) return;
+      opzioni[id].grado = grado;
+      const s = parseFloat(spessore);
+      if (isFinite(s) && s > 0) opzioni[id].spessore = s;
+      const opts = document.getElementById(`opts-${id}`);
+      if (opts) {
+        opts.querySelector("select").value = opzioni[id].grado;
+        opts.querySelector("input").value = opzioni[id].spessore;
+      }
+      aggiornaTempoCard(byId[id]);
+    });
+  }
+
+  ids.forEach(id => { if (!selezione.has(id)) toggleItem(id); });
+
+  // apri gli accordion delle categorie coinvolte
+  new Set(ids.map(id => byId[id].categoria)).forEach(cat => {
+    const acc = gridEl.querySelector(`.cat-acc[data-cat="${cat}"]`);
+    if (acc && !acc.classList.contains("open")) {
+      acc.classList.add("open");
+      acc.querySelector(".cat-head").setAttribute("aria-expanded", "true");
+    }
+  });
+
+  const banner = document.createElement("div");
+  banner.className = "ospite-banner";
+  banner.innerHTML = `📦 <strong>Spesa e preparazione condivise</strong> — carrello caricato: qui sotto trovi quantità, sintesi di preparazione e piano. Quando è il momento, premi ▶ Avvia.`;
+  const sez = document.getElementById("carrello-sez");
+  sez.insertBefore(banner, sez.firstChild);
+  sez.scrollIntoView({ behavior: "smooth", block: "start" });
+  return true;
+}
 
 /* --- modalità ospite: apre un link #g=... e segue la cottura --- */
 function bootOspite() {
@@ -1623,4 +1948,4 @@ renderCatalogo();
 aggiornaContatore();
 aggiornaCarrello();
 aggiornaPiano();
-bootOspite();
+if (!bootOspite()) bootCarrello();
