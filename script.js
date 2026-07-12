@@ -915,14 +915,9 @@ CATALOGO.filter(i => i.gradi).forEach(i => {
   opzioni[i.id] = { grado: i.id === "costata" ? "rare" : "media", spessore: i.spessoreBase };
 });
 
-let sequenza  = [];
-let ticker    = null;
-let startTs   = null;
-let timeouts  = [];
-let activeIdx = -1;
 let wakeLock  = null;
 let audioCtx  = null;
-let confermaFermaTimer = null;
+let regia     = null;   // stato della regia (piano attivo)
 
 /* ================================================================
    DURATA / UTILS
@@ -1107,7 +1102,7 @@ function buildOpzioni(item) {
 function aggiornaTempoCard(item) {
   const el = gridEl.querySelector(`[data-time="${item.id}"]`);
   if (el) el.textContent = fmtMin(cotturaSec(item));
-  aggiornaPiano();
+  aggiornaQuando();
 }
 
 function toggleItem(id, card) {
@@ -1122,15 +1117,13 @@ function toggleItem(id, card) {
   if (opts) opts.classList.toggle("hidden", !sel);
   aggiornaContatore();
   aggiornaCarrello();
-  aggiornaPiano();
+  aggiornaQuando();
+  salvaStato();
 }
 
 function aggiornaContatore() {
-  const n = selezione.size;
-  document.getElementById("sel-count").textContent =
-    n === 0 ? "Nessun alimento selezionato" :
-    n === 1 ? "1 alimento selezionato" : `${n} alimenti selezionati`;
-  document.getElementById("startBtn").disabled = n === 0 || startTs !== null;
+  const ok = document.getElementById("okBtn");
+  if (ok) ok.disabled = selezione.size === 0 || regia !== null;
 }
 
 /* ================================================================
@@ -1244,74 +1237,11 @@ const NOTE_PREP = {
   patate: "prelessate 10 min con la buccia, poi a fette con olio e rosmarino",
 };
 
-const GRUPPI_TRATT = [
-  { chiave: "marinata60", icona: "🥣", titolo: "Marinatura / rub", quando: "1 h prima (o ieri sera)" },
-  { chiave: "marinata30", icona: "🥣", titolo: "Marinatura breve", quando: "30 min prima" },
-  { chiave: "sale40",     icona: "🧂", titolo: "Salatura anticipata", quando: "40+ min prima" },
-  { chiave: "salesubito", icona: "🧂", titolo: "Sale subito prima", quando: "alla griglia" },
-  { chiave: "olio",       icona: "🫒", titolo: "Solo olio, poco prima", quando: "alla griglia" },
-  { chiave: "nudo",       icona: "✋", titolo: "Niente trattamento", quando: "—" },
-];
-
 function gruppoDi(item) {
   if (item.marinatura >= 60) return "marinata60";
   if (item.marinatura > 0)   return "marinata30";
   if (item.salaPrima)        return "sale40";
   return TRATT[item.id] || "salesubito";
-}
-
-function sintesiGruppi(items) {
-  const perGruppo = {};
-  items.forEach(i => { (perGruppo[gruppoDi(i)] = perGruppo[gruppoDi(i)] || []).push(i); });
-  return GRUPPI_TRATT
-    .filter(g => perGruppo[g.chiave])
-    .map(g => ({ ...g, items: perGruppo[g.chiave] }));
-}
-
-function primaFrase(testo) {
-  const i = testo.indexOf(". ");
-  return i === -1 ? testo.replace(/\.\s*$/, "") : testo.slice(0, i);
-}
-
-function renderSintesi(items) {
-  if (!items.length) return "";
-  const gruppi = sintesiGruppi(items);
-
-  const blocchi = gruppi.map(g => {
-    const insieme = g.chiave.startsWith("marinata") && g.items.length > 1
-      ? `<p class="sint-tip">Ottimizza: una base unica (olio + aglio) in una ciotola sola, dividi nei sacchetti e personalizza con le note qui sotto.</p>`
-      : "";
-    const righe = g.items.map(i =>
-      `<li><strong>${i.nome}</strong>${NOTE_PREP[i.id] ? ` — ${NOTE_PREP[i.id]}` : ""}</li>`).join("");
-    return `
-      <div class="sint-blocco">
-        <div class="sint-head">${g.icona} ${g.titolo}<span class="sint-quando">${g.quando}</span></div>
-        <ul class="sint-lista">${righe}</ul>
-        ${insieme}
-      </div>`;
-  }).join("");
-
-  const acquisti = items.map(i => `<li><strong>${i.nome}</strong>: ${primaFrase(i.scheda.acquisto)}</li>`).join("");
-
-  return `
-    <h3 class="sint-titolo">Come preparare quello che hai scelto</h3>
-    ${blocchi}
-    <div class="sint-blocco">
-      <div class="sint-head">🛒 Promemoria per l'acquisto<span class="sint-quando">al banco</span></div>
-      <ul class="sint-lista">${acquisti}</ul>
-    </div>`;
-}
-
-function sintesiTesto(items) {
-  if (!items.length) return "";
-  const gruppi = sintesiGruppi(items);
-  const blocchi = gruppi.map(g => {
-    const righe = g.items.map(i => `  • ${i.nome}${NOTE_PREP[i.id] ? `: ${NOTE_PREP[i.id]}` : ""}`).join("\n");
-    const tip = g.chiave.startsWith("marinata") && g.items.length > 1 ? "\n  → una ciotola unica, poi dividi nei sacchetti" : "";
-    return `${g.icona} ${g.titolo} (${g.quando})\n${righe}${tip}`;
-  }).join("\n");
-  const acquisti = items.map(i => `  • ${i.nome}: ${primaFrase(i.scheda.acquisto)}`).join("\n");
-  return `\n\nCOME PREPARARLO\n${blocchi}\n🛒 Al banco\n${acquisti}`;
 }
 
 /* ================================================================
@@ -1321,7 +1251,6 @@ function sintesiTesto(items) {
    tra i "secondi" nel carrello; SPESA converte in peso crudo e pezzi.
    ================================================================ */
 const carrelloEl  = document.getElementById("carrello");
-const sintesiEl   = document.getElementById("sintesi");
 const adultiEl    = document.getElementById("q-adulti");
 const bambiniEl   = document.getElementById("q-bambini");
 const appetitoEl  = document.getElementById("q-appetito");
@@ -1364,11 +1293,9 @@ function calcolaSpesa() {
 function aggiornaCarrello() {
   if (selezione.size === 0) {
     carrelloEl.innerHTML = `<p class="piano-vuoto">Il carrello è vuoto: seleziona i tagli qui sopra.</p>`;
-    sintesiEl.innerHTML = "";
     shareCarBtn.classList.add("hidden");
     return;
   }
-  sintesiEl.innerHTML = renderSintesi([...selezione].map(id => byId[id]));
 
   const { totale, righe, contorni } = calcolaSpesa();
 
@@ -1392,367 +1319,524 @@ function aggiornaCarrello() {
     <ul class="car-lista">${righeHtml}${contorniHtml}</ul>
     ${righe.length ? `<p class="car-totale">Carne/pesce da comprare in totale: <strong>~${fmtPeso(righe.reduce((s, r) => s + r.crudo, 0))}</strong> (fabbisogno netto ${fmtPeso(totale)})</p>` : ""}`;
 
+  carrelloEl.insertAdjacentHTML("beforeend", repartiHtml());
+
   carrelloEl.querySelectorAll("[data-rimuovi]").forEach(btn =>
     btn.addEventListener("click", () => toggleItem(btn.dataset.rimuovi)));
 
   shareCarBtn.classList.remove("hidden");
 }
 
-function listaSpesaTesto() {
-  const { adulti, bambini, righe, contorni } = calcolaSpesa();
-  const testa = `Lista spesa griglia — ${adulti} adulti${bambini ? ` + ${bambini} bambini` : ""}`;
-  const corpo = righe.map(r =>
-    `• ${r.item.nome}: ${fmtPeso(r.crudo)}${r.pezzi ? ` (circa ${r.pezzi} ${r.unita})` : ""}`).join("\n");
-  const coda = contorni.length ? `\nContorni: ${contorni.map(c => c.nome).join(", ")} (~200 g a testa in tutto)` : "";
-  return `${testa}\n${corpo}${coda}${sintesiTesto([...selezione].map(id => byId[id]))}`;
-}
 
 /* ================================================================
-   PIANO DI PREPARAZIONE
+   SPESA PRECISA — dispensa/aromi (senza doppioni) e attrezzatura.
+   ING: dizionario ingredienti (u = unità contabile, q = quantità
+   fissa, altrimenti "q.b."). AROMI: cosa serve per ogni taglio;
+   le voci contabili sono [id, quantità].
    ================================================================ */
-const pianoEl      = document.getElementById("piano");
-const prontoAlleEl = document.getElementById("pronto-alle");
+const ING = {
+  olio: { n: "Olio extravergine" }, sale: { n: "Sale grosso + fino" }, pepe: { n: "Pepe nero" },
+  limone: { n: "Limoni", u: "" }, aglio: { n: "Aglio", u: "spicchi" },
+  rosmarino: { n: "Rosmarino", u: "rametti" }, timo: { n: "Timo", u: "rametti" },
+  salvia: { n: "Salvia", u: "rametti" }, origano: { n: "Origano" }, menta: { n: "Menta" },
+  prezzemolo: { n: "Prezzemolo" }, basilico: { n: "Basilico" },
+  paprika: { n: "Paprika dolce" }, paprikaAff: { n: "Paprika affumicata" },
+  peperoncino: { n: "Peperoncino" }, soia: { n: "Salsa di soia" },
+  yogurt: { n: "Yogurt bianco", q: "1 vasetto" }, miele: { n: "Miele" }, senape: { n: "Senape" },
+  salsabbq: { n: "Salsa BBQ", q: "1 bottiglia" }, zucchero: { n: "Zucchero di canna" },
+  agliopolvere: { n: "Aglio in polvere" }, burro: { n: "Burro" }, aceto: { n: "Aceto balsamico" },
+  rucola: { n: "Rucola", q: "1 busta" }, grana: { n: "Grana in scaglie" },
+  panini: { n: "Panini", q: "1 a testa" }, formaggio: { n: "Formaggio a fette (facolt.)" },
+};
 
-prontoAlleEl.addEventListener("input", aggiornaPiano);
+const AROMI = {
+  bistecca: ["sale", "pepe", "olio"],
+  costata: ["sale", "olio"],
+  filetto_manzo: ["sale", "pepe", "olio", "burro"],
+  tagliata: ["sale", "olio", "rucola", "grana"],
+  hamburger: ["sale", "olio", "panini", "formaggio"],
+  spiedini_manzo: ["olio", ["aglio", 1], ["rosmarino", 1], "sale", "pepe"],
+  picanha: ["sale"],
+  bavetta: ["olio", "soia", ["aglio", 1], "sale"],
+  asado: ["sale"],
+  nodino_vitello: ["sale", "olio", "pepe"],
+  braciola_vitello: ["olio", "sale"],
+  tagliata_vitello: ["olio", "sale", ["limone", 1], "rucola"],
+  spiedini_vitello: ["olio", ["limone", 1], ["salvia", 1], "sale"],
+  salsiccia_vitello: ["olio"],
+  salsiccia: ["panini"],
+  luganega: [],
+  salamella: ["olio", "panini"],
+  costine: ["sale", "pepe", "paprika", "zucchero", "agliopolvere", "salsabbq"],
+  pancetta: [],
+  braciola: ["olio", "sale"],
+  costoletta: ["sale", "olio"],
+  wurstel: ["senape", "panini"],
+  filetto_maiale: ["sale", "paprika", "agliopolvere", "pepe", "olio"],
+  capocollo: ["sale"],
+  bombette: [],
+  spiedini_maiale: ["olio", ["aglio", 1], ["rosmarino", 1], "paprika", "sale"],
+  stinco: ["olio", "paprika", "miele", "senape"],
+  petto_pollo: ["olio", ["limone", 1], "sale"],
+  coscia_pollo: ["olio", ["limone", 1], "paprika", ["aglio", 1], "sale"],
+  ali_pollo: ["paprikaAff", "agliopolvere", "pepe", "sale"],
+  galletto: ["olio", ["limone", 1], "peperoncino", ["rosmarino", 1], ["aglio", 2], "pepe", "sale"],
+  spiedini_pollo: ["yogurt", ["limone", 1], "paprika", "sale"],
+  fesa_tacchino: ["sale", "olio", ["limone", 1]],
+  coscia_tacchino: ["paprika", ["aglio", 1], ["rosmarino", 1], "olio", "sale"],
+  spiedini_tacchino: ["yogurt", ["limone", 1], "sale"],
+  hamburger_tacchino: ["olio", "sale", "panini"],
+  costolette_agnello: ["olio", ["aglio", 1], ["rosmarino", 1], ["timo", 1], "sale"],
+  spiedini_agnello: ["olio", ["limone", 1], ["aglio", 1], "origano", "sale"],
+  arrosticini: ["sale"],
+  cosciotto_agnello: ["olio", ["aglio", 1], ["rosmarino", 1], ["limone", 1], "sale"],
+  salmone: ["olio", "sale", ["limone", 1]],
+  gamberoni: ["olio", ["aglio", 1], "prezzemolo", ["limone", 1], "sale"],
+  spada: ["olio", ["limone", 1], "origano", "sale"],
+  branzino: ["olio", ["limone", 1], ["rosmarino", 1], ["timo", 1], "sale"],
+  calamari: ["olio", "sale", ["limone", 1], "prezzemolo"],
+  sardine: ["olio", "sale"],
+  zucchine: ["olio", "sale", "menta"],
+  peperoni: ["olio", "sale", ["aglio", 1], "basilico"],
+  melanzane: ["olio", "sale", ["aglio", 1], "prezzemolo"],
+  cipolla: ["olio", "sale", "aceto"],
+  mais: ["burro", "sale"],
+  funghi: ["olio", ["aglio", 1], "prezzemolo", "sale"],
+  radicchio: ["olio", "sale", "aceto"],
+  patate: ["olio", "sale", ["rosmarino", 1]],
+};
 
-function taskPreparazione(items) {
-  // minuti PRIMA dell'inizio cottura → descrizione
-  const tasks = [];
+const CON_SPIEDI_LEGNO = ["spiedini_manzo", "spiedini_vitello", "spiedini_maiale",
+  "spiedini_pollo", "spiedini_tacchino", "spiedini_agnello"];
 
-  const gruppiMar = {};
-  items.filter(i => i.marinatura > 0).forEach(i => {
-    const key = i.marinatura >= 60 ? 60 : 30;
-    (gruppiMar[key] = gruppiMar[key] || []).push(i.nome);
-  });
-  if (gruppiMar[60]) tasks.push({ min: 100, txt: `Prepara marinata/rub per: ${gruppiMar[60].join(", ")} (serve ~1 h — ancora meglio se fatto ieri sera)` });
-  if (gruppiMar[30]) tasks.push({ min: 70, txt: `Prepara e metti a marinare: ${gruppiMar[30].join(", ")} (~30 min di marinatura)` });
-
-  const daSalare = items.filter(i => i.salaPrima);
-  if (daSalare.length) tasks.push({ min: 45, txt: `Sala bene: ${daSalare.map(i => i.nome).join(", ")} — con 40+ min il sale penetra (in alternativa, sala subito prima di grigliare)` });
-
-  const serveIndiretta = items.some(i => i.metodo !== "diretta");
-  tasks.push({ min: 40, txt: `Accendi la carbonella: ciminiera piena, pronta in ~20 min${serveIndiretta ? ". Abbondante: ti servirà anche una zona indiretta" : ""}` });
-
-  const gruppiFrigo = {};
-  items.filter(i => i.frigo > 0).forEach(i => {
-    (gruppiFrigo[i.frigo] = gruppiFrigo[i.frigo] || []).push(i.nome);
-  });
-  Object.keys(gruppiFrigo).map(Number).sort((a, b) => b - a).forEach(min => {
-    tasks.push({ min, txt: `Fuori dal frigo: ${gruppiFrigo[min].join(", ")}` });
-  });
-
-  tasks.push({ min: 10, txt: serveIndiretta
-    ? "Stendi la brace in DUE ZONE: forte da un lato, l'altro lato libero (indiretta)"
-    : "Stendi la brace: una zona forte e un bordo più dolce per gestire le fiammate" });
-  tasks.push({ min: 5, txt: "Spazzola la griglia, ungila con carta e olio, lasciala scaldare sulla brace" });
-  tasks.push({ min: 0, txt: "Premi ▶ Avvia: il timer mette ogni pezzo al momento giusto perché finisca tutto insieme" });
-
-  return tasks.sort((a, b) => b.min - a.min);
-}
-
-function aggiornaPiano() {
-  const items = [...selezione].map(id => byId[id]);
-  if (!items.length) {
-    pianoEl.innerHTML = `<p class="piano-vuoto">Seleziona qui sopra cosa hai comprato: il piano si genera da solo.</p>`;
-    return;
-  }
-
-  const maxTot = Math.max(...items.map(totaleSec));
-  const primo  = items.find(i => totaleSec(i) === maxTot);
-
-  // orario target facoltativo
-  let avvio = null;
-  const hhmm = prontoAlleEl.value;
-  if (hhmm) {
-    const [h, m] = hhmm.split(":").map(Number);
-    const target = new Date(); target.setHours(h, m, 0, 0);
-    if (target.getTime() < Date.now()) target.setDate(target.getDate() + 1);
-    avvio = new Date(target.getTime() - maxTot * 1000);
-  }
-
-  const clock = (minPrima) => {
-    if (!avvio) return `${minPrima} min prima`;
-    return formatTime(new Date(avvio.getTime() - minPrima * 60000));
-  };
-
-  const tasks = taskPreparazione(items);
-  const righe = tasks.map(t =>
-    `<li><span class="piano-ora">${t.min === 0 ? (avvio ? formatTime(avvio) : "ora zero") : clock(t.min)}</span><span>${t.txt}</span></li>`
-  ).join("");
-
-  pianoEl.innerHTML = `
-    <div class="piano-sommario">
-      Cottura più lunga: <strong>${primo.nome}</strong> (${fmtMin(cotturaSec(primo))}${primo.riposo ? ` + ${primo.riposo} min riposo` : ""})
-      → dall'avvio a in tavola: <strong>${fmtMin(maxTot)}</strong>${avvio ? ` · premi Avvia alle <strong>${formatTime(avvio)}</strong>` : ""}
-    </div>
-    <ol class="piano-lista">${righe}</ol>`;
-}
-
-/* ================================================================
-   TIMER SINCRONIZZATO (target = ora di servizio, riposo incluso)
-   ================================================================ */
-const logEl        = document.getElementById("log");
-const nextEl       = document.getElementById("next");
-const nextStickyEl = document.getElementById("next-sticky");
-const startBtn     = document.getElementById("startBtn");
-const resetBtn     = document.getElementById("resetBtn");
-const shareBtn     = document.getElementById("shareBtn");
-const avvisoEl     = document.getElementById("avviso");
-
-function costruisciEventi(items) {
-  const maxTot = Math.max(...items.map(totaleSec));
-  const eventi = [];
-
+function spesaDispensa(items) {
+  const acc = {};   // id -> {tot, per:[nomi]}
   items.forEach(item => {
-    const cott  = cotturaSec(item);
-    const start = maxTot - totaleSec(item);
-    const end   = start + cott;
-
-    eventi.push({ tempo: start, type: "metti", msg: `Metti ${item.nome} (${fmtMin(cott)}, ${item.metodo})` });
-
-    const avgMin   = averageRange(item.flip);
-    const interval = avgMin ? Math.round(avgMin * 60) : null;
-    if (interval) {
-      const guard = Math.max(30, Math.round(interval * 0.3));
-      for (let t = start + interval; t < end - guard; t += interval) {
-        eventi.push({ tempo: t, type: "gira", msg: `Gira ${item.nome} (ogni ${item.flip} min)` });
-      }
-    } else {
-      eventi.push({ tempo: start + Math.round(cott / 2), type: "gira", msg: `Gira ${item.nome}` });
-    }
-
-    eventi.push({
-      tempo: end, type: "togli",
-      msg: item.riposo > 0
-        ? `Togli ${item.nome} — in riposo ${item.riposo} min sotto alluminio`
-        : `Togli ${item.nome} — pronto!`,
+    (AROMI[item.id] || []).forEach(voce => {
+      const [id, n] = Array.isArray(voce) ? voce : [voce, 0];
+      if (!acc[id]) acc[id] = { tot: 0, per: [] };
+      acc[id].tot += n;
+      if (!acc[id].per.includes(item.nome)) acc[id].per.push(item.nome);
     });
   });
-
-  const prio = { metti: 0, gira: 1, togli: 2, finale: 3 };
-  eventi.sort((a, b) => a.tempo !== b.tempo ? a.tempo - b.tempo : (prio[a.type] ?? 9) - (prio[b.type] ?? 9));
-  eventi.push({ tempo: maxTot, type: "finale", msg: "TUTTO PRONTO! In tavola!" });
-  return eventi;
-}
-
-/* Pianifica gli eventi da un istante di avvio t0 (anche nel passato,
-   per chi apre un link condiviso a cottura già iniziata). */
-function pianificaEventi(eventi, t0) {
-  sequenza = eventi;
-  startTs  = t0;
-
-  renderTimeline(sequenza);
-  requestWakeLock();
-
-  const elapsed0 = (Date.now() - t0) / 1000;
-
-  sequenza.forEach((ev, i) => {
-    if (ev.tempo < elapsed0 - 0.5) {           // evento già passato: spunta senza beep
-      const li = document.getElementById(`tl-${i}`);
-      if (li) { li.classList.add("done"); li.querySelector("input").checked = true; }
-      if (i === sequenza.length - 1) fineCottura();
-      return;
-    }
-    const id = setTimeout(() => {
-      aggiungiLog(ev.msg);
-      playBeep(ev.type);
-      if (navigator.vibrate) navigator.vibrate(ev.type === "finale" ? [200, 100, 200, 100, 400] : [150, 70, 150]);
-      sendNotifica(ev.msg);
-
-      const li = document.getElementById(`tl-${i}`);
-      if (li) { li.classList.add("done"); li.querySelector("input").checked = true; }
-
-      if (i === sequenza.length - 1) fineCottura();
-    }, Math.max(0, ev.tempo - elapsed0) * 1000);
-    timeouts.push(id);
+  return Object.entries(acc).map(([id, a]) => {
+    const d = ING[id];
+    const q = d.q ? d.q : (d.u !== undefined && a.tot > 0 ? `${a.tot}${d.u ? " " + d.u : ""}` : "q.b.");
+    const per = a.per.length <= 2 && items.length > 1 ? a.per.slice(0, 2).join(", ") : "";
+    return { nome: d.n, q, per };
   });
-
-  if (startTs !== null) {
-    ticker = setInterval(aggiornaNext, 250);
-    aggiornaNext();
-  }
 }
 
-function fineCottura() {
-  if (ticker) { clearInterval(ticker); ticker = null; }
-  aggiornaNext();
-  startTs = null;
-  startBtn.disabled = selezione.size === 0;
-  resetBtn.classList.add("hidden");
-  releaseWakeLock();
+function spesaAttrezzi(items) {
+  const out = [];
+  const maxTotMin = items.length ? Math.max(...items.map(totaleSec)) / 60 : 0;
+  const indiretta = items.some(i => i.metodo !== "diretta");
+  let kg = Math.max(2, Math.ceil((maxTotMin + 30) / 40)) + (indiretta ? 1 : 0);
+  kg = Math.min(kg, 6);
+  out.push({ nome: "Carbonella", q: `~${kg} kg`, per: indiretta ? "serve anche la zona indiretta" : "" });
+  const nSpiedi = items.filter(i => CON_SPIEDI_LEGNO.includes(i.id)).length;
+  if (nSpiedi) out.push({ nome: "Spiedi di legno", q: "6-8", per: "a bagno 30 min prima" });
+  if (items.some(i => i.id === "luganega")) out.push({ nome: "Spiedi lunghi ×2", q: "", per: "luganega a chiocciola" });
+  if (items.some(i => i.riposo > 0)) out.push({ nome: "Alluminio", q: "1 rotolo", per: "riposo della carne" });
+  if (items.some(i => i.id === "cipolla")) out.push({ nome: "Stuzzicadenti", q: "", per: "rondelle di cipolla" });
+  if (items.some(i => i.id === "branzino" || i.id === "sardine")) out.push({ nome: "Gratella a libro", q: "", per: "pesce da girare in un gesto" });
+  if (items.some(i => i.id === "galletto")) out.push({ nome: "Mattone avvolto in alluminio", q: "", per: "peso sul galletto" });
+  out.push({ nome: "Termometro a lettura istantanea", q: "", per: "consigliato" });
+  return out;
 }
 
-startBtn.addEventListener("click", () => {
+function repartoHtml(titolo, righe, nota) {
+  if (!righe.length) return "";
+  const li = righe.map(r => `<li><span>${r.nome}${r.per ? ` <span class="per">· ${r.per}</span>` : ""}</span><span class="q">${r.q}</span></li>`).join("");
+  return `<div class="reparto"><h4>${titolo}${nota ? ` <span class="per">${nota}</span>` : ""}</h4><ul>${li}</ul></div>`;
+}
+
+function repartiHtml() {
   const items = [...selezione].map(id => byId[id]);
-  if (!items.length) { mostraAvviso("Seleziona almeno un alimento."); return; }
-
-  initAudio();
-  if ("Notification" in window && Notification.permission === "default") Notification.requestPermission();
-
-  startBtn.disabled = true;
-  resetBtn.classList.remove("hidden");
-  shareBtn.classList.remove("hidden");
-  logEl.innerHTML = "";
-  clearAll();
-  activeIdx = -1;
-
-  pianificaEventi(costruisciEventi(items), Date.now());
-  document.getElementById("cottura").scrollIntoView({ behavior: "smooth", block: "start" });
-});
-
-/* Ferma con doppia conferma inline (niente dialog) */
-resetBtn.addEventListener("click", () => {
-  if (!resetBtn.classList.contains("conferma")) {
-    resetBtn.classList.add("conferma");
-    resetBtn.textContent = "Confermi? Tocca ancora";
-    confermaFermaTimer = setTimeout(() => ripristinaFerma(), 3000);
-    return;
-  }
-  clearTimeout(confermaFermaTimer);
-  ripristinaFerma();
-  clearAll();
-  startTs = null; sequenza = []; activeIdx = -1;
-  logEl.innerHTML = "";
-  nextEl.innerHTML = "";
-  nextStickyEl.classList.add("hidden");
-  document.getElementById("timeline-list").innerHTML = "";
-  startBtn.disabled = selezione.size === 0;
-  resetBtn.classList.add("hidden");
-  shareBtn.classList.add("hidden");
-  releaseWakeLock();
-});
-
-function ripristinaFerma() {
-  resetBtn.classList.remove("conferma");
-  resetBtn.textContent = "⏹ Ferma";
+  if (!items.length) return "";
+  return repartoHtml("🧂 Dispensa &amp; aromi", spesaDispensa(items), "(salta quello che hai già)") +
+         repartoHtml("🔥 Attrezzatura", spesaAttrezzi(items));
 }
+
+function listaSpesaTesto() {
+  const { adulti, bambini, righe, contorni } = calcolaSpesa();
+  const items = [...selezione].map(id => byId[id]);
+  const r = [];
+  r.push(`Lista spesa griglia — ${adulti} adulti${bambini ? ` + ${bambini} bambini` : ""}`);
+  if (righe.length) {
+    r.push("", "🥩 DAL MACELLAIO");
+    righe.forEach(x => r.push(`• ${x.item.nome}: ${fmtPeso(x.crudo)}${x.pezzi ? ` (circa ${x.pezzi} ${x.unita})` : ""}`));
+  }
+  if (contorni.length) {
+    r.push("", "🥬 ORTOLANO");
+    r.push(`• ${contorni.map(c => c.nome).join(", ")} (~200 g a testa in tutto)`);
+  }
+  const disp = spesaDispensa(items);
+  if (disp.length) {
+    r.push("", "🧂 DISPENSA & AROMI (salta ciò che hai già)");
+    disp.forEach(d => r.push(`• ${d.nome}: ${d.q}${d.per ? ` (${d.per})` : ""}`));
+  }
+  r.push("", "🔥 ATTREZZATURA");
+  spesaAttrezzi(items).forEach(a => r.push(`• ${a.nome}${a.q ? `: ${a.q}` : ""}${a.per ? ` (${a.per})` : ""}`));
+  return r.join("\n");
+}
+
+/* ================================================================
+   QUANDO SI MANGIA — giorno (default oggi) + ora → OK
+   ================================================================ */
+const giornoEl    = document.getElementById("giorno-pranzo");
+const oraEl       = document.getElementById("ora-pranzo");
+const okBtn       = document.getElementById("okBtn");
+const quandoRiep  = document.getElementById("quando-riepilogo");
+const avvisoEl    = document.getElementById("avviso");
+
+function dataLocaleISO(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+const oggiISO = dataLocaleISO(new Date());
+giornoEl.value = oggiISO;
+giornoEl.min = oggiISO;
+
+function targetEpoch() {
+  if (!giornoEl.value || !oraEl.value) return null;
+  const [h, m] = oraEl.value.split(":").map(Number);
+  const [Y, M, D] = giornoEl.value.split("-").map(Number);
+  return new Date(Y, M - 1, D, h, m, 0, 0).getTime();
+}
+
+function fmtGiorno(epoch) {
+  const d = new Date(epoch);
+  return dataLocaleISO(d) === oggiISO ? "oggi"
+    : d.toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" });
+}
+
+function aggiornaQuando() {
+  if (regia) return;
+  const items = [...selezione].map(id => byId[id]);
+  if (!items.length) { quandoRiep.textContent = "Prima riempi il carrello."; return; }
+  const T = targetEpoch();
+  if (!T) { quandoRiep.textContent = "Imposta l'ora del pranzo."; return; }
+  const maxTot = Math.max(...items.map(totaleSec));
+  const inizioPrep = T - maxTot * 1000 + (passiPreparazione(items)[0]?.off ?? 0) * 1000;
+  let txt = `Si mangia ${fmtGiorno(T)} alle ${formatTime(new Date(T))} · primi preparativi alle ${formatTime(new Date(inizioPrep))} · prima carne sulla griglia alle ${formatTime(new Date(T - maxTot * 1000))}.`;
+  if (inizioPrep < Date.now() && T > Date.now()) {
+    txt += " ⚠ Sei già oltre l'inizio: con OK il piano parte subito e l'ora del pranzo slitta.";
+  }
+  quandoRiep.textContent = txt;
+}
+
+[giornoEl, oraEl].forEach(el => el.addEventListener("input", () => { aggiornaQuando(); salvaStato(); }));
 
 function mostraAvviso(txt) {
   avvisoEl.textContent = txt;
   avvisoEl.classList.remove("hidden");
-  setTimeout(() => avvisoEl.classList.add("hidden"), 3000);
+  setTimeout(() => avvisoEl.classList.add("hidden"), 3500);
 }
 
 /* ================================================================
-   TIMELINE / COUNTDOWN / LOG
+   REGIA — modello ibrido (C):
+   - preparazione ELASTICA: suona all'ora del passaggio e ri-suona
+     ogni minuto finché non premi "Fatto"; se il ritardo supera il
+     margine del passaggio, tutto il piano futuro slitta e l'ora
+     del pranzo si aggiorna (ricalcolo onesto).
+   - cottura SUL BINARIO: metti/gira/togli seguono l'orologio,
+     "Fatto" è solo spunta/silenzia — così tutto arriva in tavola
+     insieme e il link condiviso resta sincronizzato senza server.
    ================================================================ */
-function renderTimeline(eventi) {
+const regiaSez   = document.getElementById("regia-sez");
+const passoEl    = document.getElementById("passo");
+const regiaBanner = document.getElementById("regia-banner");
+const logEl      = document.getElementById("log");
+const nextStickyEl = document.getElementById("next-sticky");
+const annullaBtn = document.getElementById("annullaBtn");
+const sharePianoBtn = document.getElementById("sharePianoBtn");
+
+let regiaTicker = null;
+let confermaAnnulla = null;
+
+function passiPreparazione(items) {
+  const p = [];
+  const mar60 = items.filter(i => i.marinatura >= 60);
+  const mar30 = items.filter(i => i.marinatura > 0 && i.marinatura < 60);
+  const dett = list => list.map(i => `${i.nome}: ${NOTE_PREP[i.id] || ""}`).join(" · ");
+
+  if (mar60.length) p.push({ off: -100 * 60, margine: 15 * 60, icona: "🥣",
+    titolo: `Prepara marinata/rub e metti a marinare: ${mar60.map(i => i.nome).join(", ")}`,
+    dett: dett(mar60) + (mar60.length > 1 ? " — una ciotola unica, poi dividi nei sacchetti." : "") });
+  if (mar30.length) p.push({ off: -70 * 60, margine: 15 * 60, icona: "🥣",
+    titolo: `Metti a marinare (~30 min): ${mar30.map(i => i.nome).join(", ")}`, dett: dett(mar30) });
+  if (items.some(i => CON_SPIEDI_LEGNO.includes(i.id)))
+    p.push({ off: -50 * 60, margine: 20 * 60, icona: "💧", titolo: "Metti a bagno gli spiedi di legno",
+      dett: "30 min in acqua: non bruceranno sulla brace." });
+  const daSalare = items.filter(i => i.salaPrima);
+  if (daSalare.length) p.push({ off: -45 * 60, margine: 15 * 60, icona: "🧂",
+    titolo: `Sala in anticipo: ${daSalare.map(i => i.nome).join(", ")}`, dett: dett(daSalare) });
+  const indiretta = items.some(i => i.metodo !== "diretta");
+  p.push({ off: -40 * 60, margine: 5 * 60, icona: "🔥",
+    titolo: "Accendi la carbonella (ciminiera piena)",
+    dett: `Pronta in ~20 min.${indiretta ? " Abbondante: ti servirà anche una zona indiretta." : ""}` });
+  const gruppiFrigo = {};
+  items.filter(i => i.frigo > 0).forEach(i => (gruppiFrigo[i.frigo] = gruppiFrigo[i.frigo] || []).push(i));
+  Object.keys(gruppiFrigo).map(Number).sort((a, b) => b - a).forEach(min => {
+    p.push({ off: -min * 60, margine: Math.max(5 * 60, min * 20), icona: "🧊",
+      titolo: `Fuori dal frigo: ${gruppiFrigo[min].map(i => i.nome).join(", ")}`,
+      dett: "A temperatura ambiente cuoce uniforme." });
+  });
+  p.push({ off: -10 * 60, margine: 3 * 60, icona: "🔥",
+    titolo: indiretta ? "Stendi la brace in DUE ZONE" : "Stendi la brace",
+    dett: indiretta ? "Forte da un lato, l'altro lato libero per l'indiretta." : "Una zona forte e un bordo dolce per gestire le fiammate." });
+  p.push({ off: -5 * 60, margine: 2 * 60, icona: "🧹",
+    titolo: "Spazzola la griglia, ungila e falla scaldare", dett: "Carta da cucina e olio, sopra la brace." });
+  return p.sort((a, b) => a.off - b.off);
+}
+
+function costruisciEventi(items) {
+  const maxTot = Math.max(...items.map(totaleSec));
+  const eventi = [];
+  items.forEach(item => {
+    const cott  = cotturaSec(item);
+    const start = maxTot - totaleSec(item);
+    const end   = start + cott;
+    eventi.push({ off: start, tipo: "metti", titolo: `Metti ${item.nome} (${fmtMin(cott)}, ${item.metodo})`, dett: NOTE_PREP[item.id] || "" });
+    const avgMin = averageRange(item.flip);
+    const interval = avgMin ? Math.round(avgMin * 60) : null;
+    if (interval) {
+      const guard = Math.max(30, Math.round(interval * 0.3));
+      for (let t = start + interval; t < end - guard; t += interval)
+        eventi.push({ off: t, tipo: "gira", titolo: `Gira ${item.nome} (ogni ${item.flip} min)`, dett: "" });
+    } else {
+      eventi.push({ off: start + Math.round(cott / 2), tipo: "gira", titolo: `Gira ${item.nome}`, dett: "" });
+    }
+    eventi.push({ off: end, tipo: "togli",
+      titolo: item.riposo > 0 ? `Togli ${item.nome} — riposo ${item.riposo} min sotto alluminio` : `Togli ${item.nome} — pronto!`, dett: "" });
+  });
+  const prio = { metti: 0, gira: 1, togli: 2 };
+  eventi.sort((a, b) => a.off !== b.off ? a.off - b.off : (prio[a.tipo] ?? 9) - (prio[b.tipo] ?? 9));
+  eventi.push({ off: maxTot, tipo: "finale", titolo: "TUTTO PRONTO! In tavola!", dett: "" });
+  return eventi;
+}
+
+function pianoRegia(items) {
+  const prep = passiPreparazione(items).map(p => ({ ...p, fase: "prep", tipo: "prep" }));
+  const cott = costruisciEventi(items).map(e => ({ ...e, fase: "cottura", margine: 0, icona: e.tipo === "finale" ? "🍽" : "🔥" }));
+  return [...prep, ...cott].map(e => ({ ...e, fatto: false, fired: false, lastRing: 0 }));
+}
+
+function avviaRegia(T, opts = {}) {
+  const items = [...selezione].map(id => byId[id]);
+  if (!items.length || !T) return false;
+  const maxTot = Math.max(...items.map(totaleSec));
+  let base = opts.base ?? T - maxTot * 1000;
+  const eventi = pianoRegia(items);
+
+  if (opts.base === undefined) {
+    const primo = base + eventi[0].off * 1000;
+    if (primo < Date.now()) {
+      const delta = Date.now() - primo;
+      base += delta;
+      T += delta;
+    }
+  }
+  eventi.forEach(e => { e.abs = base + e.off * 1000; });
+  (opts.fatti || []).forEach(i => { if (eventi[i]) { eventi[i].fatto = true; eventi[i].fired = true; } });
+  // passato: niente beep; la cottura è sul binario quindi si spunta da sola,
+  // e per l'ospite anche la preparazione (non può agire sul passato)
+  eventi.forEach(e => {
+    if (e.abs < Date.now()) {
+      e.fired = true;
+      if (e.fase === "cottura" || opts.ospite) e.fatto = true;
+    }
+  });
+
+  regia = { T, base, eventi, ospite: !!opts.ospite, maxTot, sliTot: 0 };
+
+  document.getElementById("okBtn").disabled = true;
+  giornoEl.disabled = oraEl.disabled = true;
+  regiaSez.classList.remove("hidden");
+  renderRegiaBanner();
+  renderTimelineRegia();
+  if (!regia.ospite) {
+    requestWakeLock();
+    if ("Notification" in window && Notification.permission === "default") Notification.requestPermission();
+  }
+  if (regiaTicker) clearInterval(regiaTicker);
+  regiaTicker = setInterval(tickRegia, 500);
+  tickRegia();
+  salvaStato();
+  regiaSez.scrollIntoView({ behavior: "smooth", block: "start" });
+  return true;
+}
+
+function passoCorrente() {
+  return regia.eventi.find(e => !e.fatto) || null;
+}
+
+function tickRegia() {
+  if (!regia) return;
+  const now = Date.now();
+  const evs = regia.eventi;
+
+  evs.forEach((e, i) => {
+    if (!e.fired && e.abs <= now) {
+      e.fired = true;
+      aggiungiLog(e.titolo);
+      playBeep(e.fase === "prep" ? "prep" : e.tipo);
+      if (navigator.vibrate) navigator.vibrate(e.tipo === "finale" ? [200, 100, 200, 100, 400] : [150, 70, 150]);
+      sendNotifica(e.titolo);
+      // cottura sul binario: gli eventi precedenti di cottura si spuntano da soli
+      if (e.fase === "cottura") evs.forEach((p, j) => { if (j < i && p.fase === "cottura" && !p.fatto) segnaFatto(j, false); });
+      const li = document.getElementById(`tl-${i}`);
+      if (li) li.classList.add("fired");
+    }
+  });
+
+  const cur = passoCorrente();
+
+  // suoneria insistente sui passaggi di preparazione scaduti
+  if (cur && cur.fase === "prep" && cur.fired && !regia.ospite && now - cur.abs > 55000) {
+    if (now - cur.lastRing > 60000) { cur.lastRing = now; playBeep("prep"); if (navigator.vibrate) navigator.vibrate([150, 70, 150]); }
+  }
+
+  renderPasso(cur, now);
+
+  if (!cur) {                                   // finale raggiunto e spuntato
+    clearInterval(regiaTicker); regiaTicker = null;
+    releaseWakeLock();
+  }
+}
+
+function segnaFatto(idx, manuale) {
+  const e = regia.eventi[idx];
+  if (!e || e.fatto) return;
+  e.fatto = true;
+  const li = document.getElementById(`tl-${idx}`);
+  if (li) { li.classList.add("done"); li.querySelector("input").checked = true; }
+
+  // preparazione elastica: oltre il margine, tutto il futuro slitta
+  if (manuale && e.fase === "prep" && !regia.ospite && e.fired) {
+    const ritardo = (Date.now() - e.abs) / 1000;
+    const sli = Math.max(0, ritardo - e.margine);
+    if (sli > 30) {
+      regia.eventi.forEach(x => { if (!x.fatto) x.abs += sli * 1000; });
+      regia.T += sli * 1000;
+      regia.base += sli * 1000;      // così link e ripristino ricostruiscono gli orari futuri giusti
+      regia.sliTot += sli;
+      aggiungiLog(`⏲ Ritardo oltre il margine: il piano slitta di ${Math.round(sli / 60)} min — si mangia alle ${formatTime(new Date(regia.T))}. Se hai condiviso il piano, rimanda il link.`);
+      renderRegiaBanner();
+      renderTimelineRegia();
+    }
+  }
+  salvaStato();
+}
+
+function premiFatto() {
+  if (!regia) return;
+  const idx = regia.eventi.findIndex(e => !e.fatto);
+  if (idx === -1) return;
+  segnaFatto(idx, true);
+  tickRegia();
+}
+
+function renderRegiaBanner() {
+  regiaBanner.innerHTML = `🍽 Si mangia <strong>${fmtGiorno(regia.T)} alle ${formatTime(new Date(regia.T))}</strong>` +
+    ` · prima carne sulla griglia alle ${formatTime(new Date(regia.base))}` +
+    (regia.sliTot > 30 ? ` · <span class="slittato">piano slittato di ${Math.round(regia.sliTot / 60)} min</span>` : "");
+}
+
+function renderPasso(cur, now) {
+  if (!cur) {
+    passoEl.innerHTML = `<div class="passo finita"><div class="cosa">🍽 Tutto in tavola — buon appetito!</div></div>`;
+    nextStickyEl.classList.add("hidden");
+    return;
+  }
+  const idx = regia.eventi.indexOf(cur);
+  const nPrep = regia.eventi.filter(e => e.fase === "prep").length;
+  const posTxt = cur.fase === "prep"
+    ? `Preparazione · passaggio ${idx + 1} di ${nPrep}`
+    : `Cottura · in tavola alle ${formatTime(new Date(regia.T))}`;
+
+  let quando, extra = "", fattoLabel = "✓ Fatto";
+  if (cur.abs > now) {
+    quando = `alle ${formatTime(new Date(cur.abs))} · tra ${formatSeconds(Math.ceil((cur.abs - now) / 1000))}`;
+    fattoLabel = "✓ Fatto in anticipo";
+  } else {
+    const rit = Math.floor((now - cur.abs) / 1000);
+    quando = `${formatTime(new Date(cur.abs))} — ADESSO 🔔${rit >= 60 ? ` · +${Math.floor(rit / 60)} min` : ""}`;
+    if (cur.fase === "prep" && rit > cur.margine) {
+      extra = `<div class="dett ritardo">Oltre il margine: al "Fatto" il pranzo slitta alle ${formatTime(new Date(regia.T + (rit - cur.margine) * 1000))}.</div>`;
+    } else if (cur.fase === "prep" && rit > 30) {
+      extra = `<div class="dett">Nei margini: hai ancora ${formatSeconds(cur.margine - rit)} senza spostare il pranzo.</div>`;
+    }
+  }
+
+  passoEl.innerHTML = `
+    <div class="passo${cur.fired && cur.abs <= now ? " due" : ""}">
+      <span class="fase-tag">${posTxt}</span>
+      <div class="cosa">${cur.icona || "🔥"} ${cur.titolo}</div>
+      <div class="quando">${quando}</div>
+      ${cur.dett ? `<div class="dett">${cur.dett}</div>` : ""}
+      ${extra}
+      <button type="button" class="fatto" onclick="premiFatto()">${fattoLabel}</button>
+    </div>`;
+
+  nextStickyEl.innerHTML = `<span>${cur.titolo}</span><span class="tempo">${cur.abs > now ? formatSeconds(Math.ceil((cur.abs - now) / 1000)) : "ORA 🔔"}</span>`;
+}
+
+function renderTimelineRegia() {
   const list = document.getElementById("timeline-list");
   list.innerHTML = "";
-  eventi.forEach((ev, i) => {
+  let faseCorr = "";
+  regia.eventi.forEach((e, i) => {
+    if (e.fase !== faseCorr) {
+      faseCorr = e.fase;
+      const h = document.createElement("li");
+      h.className = "fase-sep";
+      h.textContent = faseCorr === "prep" ? "— Preparazione —" : "— Cottura —";
+      list.appendChild(h);
+    }
     const li = document.createElement("li");
     li.id = `tl-${i}`;
-    const cb = document.createElement("input");
-    cb.type = "checkbox"; cb.disabled = true;
-    const span = document.createElement("span");
-    const when = startTs ? formatTime(new Date(startTs + ev.tempo * 1000)) : "";
-    span.textContent = when ? `${when} — ${ev.msg}` : ev.msg;
-    li.appendChild(cb); li.appendChild(span);
+    if (e.fatto) li.classList.add("done");
+    li.innerHTML = `<input type="checkbox" disabled${e.fatto ? " checked" : ""}><span>${formatTime(new Date(e.abs))} — ${e.titolo}</span>`;
     list.appendChild(li);
   });
 }
 
-function aggiornaNext() {
-  if (!sequenza.length || startTs === null) return;
-  const elapsed = (Date.now() - startTs) / 1000;
-  const i = sequenza.findIndex(ev => ev.tempo >= elapsed);
-
-  if (i === -1) {
-    nextEl.innerHTML = `<span class="titolo">Prossimo passo</span><div class="tempo">Completato ✔</div>`;
-    nextStickyEl.classList.add("hidden");
-    return;
-  }
-
-  if (activeIdx !== i) {
-    document.getElementById(`tl-${activeIdx}`)?.classList.remove("active");
-    document.getElementById(`tl-${i}`)?.classList.add("active");
-    activeIdx = i;
-  }
-
-  const ev        = sequenza[i];
-  const remaining = Math.max(0, Math.ceil(ev.tempo - elapsed));
-  nextEl.innerHTML = `<span class="titolo">Prossimo passo</span><div>${ev.msg}</div><div class="tempo">${formatSeconds(remaining)}</div>`;
-  nextStickyEl.innerHTML = `<span>${ev.msg}</span><span class="tempo">${formatSeconds(remaining)}</span>`;
-}
-
-function aggiungiLog(testo) {
-  const div = document.createElement("div");
-  div.textContent = `${formatTimeSec(new Date())} → ${testo}`;
-  logEl.prepend(div);
-}
-
-function sendNotifica(testo) {
-  if ("Notification" in window && Notification.permission === "granted") {
-    try { new Notification("Griglia", { body: testo }); } catch (_) {}
-  }
-}
-
-function clearAll() {
-  timeouts.forEach(clearTimeout);
-  timeouts = [];
-  if (ticker) { clearInterval(ticker); ticker = null; }
-}
-
-/* ================================================================
-   WAKE LOCK / AUDIO
-   ================================================================ */
-async function requestWakeLock() {
-  if (!("wakeLock" in navigator)) return;
-  try {
-    wakeLock = await navigator.wakeLock.request("screen");
-    wakeLock.addEventListener("release", () => { wakeLock = null; });
-  } catch (_) {}
-}
-
-function releaseWakeLock() {
-  if (wakeLock) { wakeLock.release(); wakeLock = null; }
-}
-
-document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible" && startTs !== null && !wakeLock) requestWakeLock();
+/* --- OK / Annulla --- */
+document.getElementById("okBtn").addEventListener("click", () => {
+  const T = targetEpoch();
+  if (!selezione.size) { mostraAvviso("Il carrello è vuoto."); return; }
+  if (!T) { mostraAvviso("Imposta giorno e ora del pranzo."); return; }
+  if (T < Date.now()) { mostraAvviso("Quell'ora è già passata: scegli un orario futuro."); return; }
+  initAudio();
+  avviaRegia(T);
 });
 
-function initAudio() {
-  if (!audioCtx) {
-    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) {}
-  }
-}
-
-function playBeep(type) {
-  initAudio();
-  if (!audioCtx) return;
-  if (type === "finale") {
-    [523, 659, 784].forEach((f, i) => {
-      const o = audioCtx.createOscillator();
-      const g = audioCtx.createGain();
-      o.connect(g); g.connect(audioCtx.destination);
-      o.frequency.value = f;
-      const t = audioCtx.currentTime + i * 0.18;
-      g.gain.setValueAtTime(0.35, t);
-      g.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
-      o.start(t); o.stop(t + 0.5);
-    });
+annullaBtn.addEventListener("click", () => {
+  if (!confermaAnnulla) {
+    annullaBtn.textContent = "Confermi? Tocca ancora";
+    confermaAnnulla = setTimeout(() => { confermaAnnulla = null; annullaBtn.textContent = "⏹ Annulla"; }, 3000);
     return;
   }
-  const freqs = { metti: 660, gira: 880, togli: 1100 };
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.connect(gain); gain.connect(audioCtx.destination);
-  osc.frequency.value = freqs[type] || 880;
-  gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
-  osc.start(audioCtx.currentTime);
-  osc.stop(audioCtx.currentTime + 0.35);
-}
-
-document.addEventListener("click", initAudio, { once: true });
+  clearTimeout(confermaAnnulla); confermaAnnulla = null;
+  annullaBtn.textContent = "⏹ Annulla";
+  if (regiaTicker) { clearInterval(regiaTicker); regiaTicker = null; }
+  regia = null;
+  regiaSez.classList.add("hidden");
+  nextStickyEl.classList.add("hidden");
+  logEl.innerHTML = "";
+  giornoEl.disabled = oraEl.disabled = false;
+  aggiornaContatore();
+  aggiornaQuando();
+  releaseWakeLock();
+  salvaStato();
+});
 
 /* ================================================================
-   CONDIVISIONE SESSIONE (link ospite, nessun server)
-   Il timer è deterministico: nel link bastano tagli + opzioni + ora
-   di avvio, e ogni telefono ricalcola la stessa timeline in locale.
-   Limite noto: se il griller ferma/cambia, i link già inviati non
-   lo sanno (condivisione "a fotografia").
+   CONDIVISIONI — link senza server (base64url nell'hash)
+   #p= piano/regia (per tutti: passaggi sincronizzati sull'orologio)
+   #c= carrello (chi cucina riparte da qui)   #g= legacy sessioni v3
    ================================================================ */
 function b64urlEncode(obj) {
   return btoa(unescape(encodeURIComponent(JSON.stringify(obj))))
@@ -1764,43 +1848,10 @@ function b64urlDecode(str) {
   return JSON.parse(decodeURIComponent(escape(atob(b64))));
 }
 
-function linkCondivisione() {
-  const items = [...selezione].map(id => byId[id]);
+function opzioniPayload(items) {
   const o = {};
   items.filter(i => i.gradi).forEach(i => { o[i.id] = [opzioni[i.id].grado, opzioni[i.id].spessore]; });
-  const dati = { t: startTs, i: items.map(i => i.id) };
-  if (Object.keys(o).length) dati.o = o;
-  return `${location.href.split("#")[0]}#g=${b64urlEncode(dati)}`;
-}
-
-function testoCondivisione() {
-  const righe = sequenza
-    .filter(ev => ev.type === "metti")
-    .map(ev => `${formatTime(new Date(startTs + ev.tempo * 1000))} — ${ev.msg}`);
-  const fine = sequenza[sequenza.length - 1];
-  righe.push(`${formatTime(new Date(startTs + fine.tempo * 1000))} — Tutto in tavola 🍽`);
-  return `🔥 Griglia in corso!\n${righe.join("\n")}\n\nSegui la cottura in diretta:`;
-}
-
-shareBtn.addEventListener("click", () => {
-  if (!sequenza.length || startTs === null) { mostraAvviso("Avvia prima la cottura."); return; }
-  condividiTesto(`${testoCondivisione()}\n${linkCondivisione()}`, shareBtn, "📤 Condividi la griglia");
-});
-
-/* --- condivisione del carrello + preparazione (link #c=...) ---
-   Per chi cucina: apre l'app con selezione, persone e orario già
-   caricati — carrello, sintesi operativa e piano pronti all'uso. --- */
-function linkCarrello() {
-  const items = [...selezione].map(id => byId[id]);
-  const o = {};
-  items.filter(i => i.gradi).forEach(i => { o[i.id] = [opzioni[i.id].grado, opzioni[i.id].spessore]; });
-  const dati = {
-    i: items.map(i => i.id),
-    p: [adultiEl.value, bambiniEl.value, appetitoEl.value, contorniEl.value],
-  };
-  if (Object.keys(o).length) dati.o = o;
-  if (prontoAlleEl.value) dati.h = prontoAlleEl.value;
-  return `${location.href.split("#")[0]}#c=${b64urlEncode(dati)}`;
+  return Object.keys(o).length ? o : undefined;
 }
 
 async function condividiTesto(testo, btn, etichetta) {
@@ -1821,48 +1872,49 @@ async function condividiTesto(testo, btn, etichetta) {
 
 shareCarBtn.addEventListener("click", () => {
   if (!selezione.size) return;
-  const testo = `${listaSpesaTesto()}\n\nApri tutto nell'app (carrello, preparazione e timer):\n${linkCarrello()}`;
-  condividiTesto(testo, shareCarBtn, "📤 Condividi spesa e preparazione");
+  condividiTesto(listaSpesaTesto(), shareCarBtn, "📤 Condividi la lista della spesa");
 });
 
-function bootCarrello() {
-  const m = location.hash.match(/#c=([A-Za-z0-9\-_]+)/);
-  if (!m) return false;
+function linkPiano() {
+  const items = [...selezione].map(id => byId[id]);
+  const dati = { i: items.map(i => i.id), T: regia.T, b: regia.base };
+  const o = opzioniPayload(items);
+  if (o) dati.o = o;
+  return `${location.href.split("#")[0]}#p=${b64urlEncode(dati)}`;
+}
 
-  let dati;
-  try { dati = b64urlDecode(m[1]); } catch (_) { return false; }
-  if (!dati || !Array.isArray(dati.i)) return false;
+function testoPiano() {
+  const righe = regia.eventi
+    .filter(e => e.fase === "prep" || e.tipo === "metti" || e.tipo === "finale")
+    .map(e => `${formatTime(new Date(e.abs))} — ${e.titolo}`);
+  return `🔥 Grigliata di ${fmtGiorno(regia.T)} — si mangia alle ${formatTime(new Date(regia.T))}\n${righe.join("\n")}\n\nSegui la regia in diretta (ogni passaggio, sincronizzato):`;
+}
 
-  const ids = dati.i.filter(id => byId[id]);
+sharePianoBtn.addEventListener("click", () => {
+  if (!regia) return;
+  condividiTesto(`${testoPiano()}\n${linkPiano()}`, sharePianoBtn, "📤 Condividi il piano");
+});
+
+function bannerOspite(html) {
+  const b = document.createElement("div");
+  b.className = "ospite-banner";
+  b.innerHTML = html;
+  regiaSez.insertBefore(b, regiaSez.firstChild.nextSibling);
+}
+
+function caricaSelezione(dati) {
+  const ids = (dati.i || []).filter(id => byId[id]);
   if (!ids.length) return false;
-
-  if (Array.isArray(dati.p)) {
-    const [a, b, ap, co] = dati.p;
-    if (a !== undefined) adultiEl.value = a;
-    if (b !== undefined) bambiniEl.value = b;
-    if (ap === "normale" || ap === "abbondante") appetitoEl.value = ap;
-    if (co === "pochi" || co === "abbondanti") contorniEl.value = co;
-  }
-  if (typeof dati.h === "string" && /^\d{2}:\d{2}$/.test(dati.h)) prontoAlleEl.value = dati.h;
-
-  if (dati.o) {
-    Object.entries(dati.o).forEach(([id, [grado, spessore]]) => {
-      if (!opzioni[id]) return;
-      opzioni[id].grado = grado;
-      const s = parseFloat(spessore);
-      if (isFinite(s) && s > 0) opzioni[id].spessore = s;
-      const opts = document.getElementById(`opts-${id}`);
-      if (opts) {
-        opts.querySelector("select").value = opzioni[id].grado;
-        opts.querySelector("input").value = opzioni[id].spessore;
-      }
-      aggiornaTempoCard(byId[id]);
-    });
-  }
-
+  if (dati.o) Object.entries(dati.o).forEach(([id, [grado, spessore]]) => {
+    if (!opzioni[id]) return;
+    opzioni[id].grado = grado;
+    const s = parseFloat(spessore);
+    if (isFinite(s) && s > 0) opzioni[id].spessore = s;
+    const opts = document.getElementById(`opts-${id}`);
+    if (opts) { opts.querySelector("select").value = opzioni[id].grado; opts.querySelector("input").value = opzioni[id].spessore; }
+    aggiornaTempoCard(byId[id]);
+  });
   ids.forEach(id => { if (!selezione.has(id)) toggleItem(id); });
-
-  // apri gli accordion delle categorie coinvolte
   new Set(ids.map(id => byId[id].categoria)).forEach(cat => {
     const acc = gridEl.querySelector(`.cat-acc[data-cat="${cat}"]`);
     if (acc && !acc.classList.contains("open")) {
@@ -1870,65 +1922,190 @@ function bootCarrello() {
       acc.querySelector(".cat-head").setAttribute("aria-expanded", "true");
     }
   });
+  return true;
+}
 
-  const banner = document.createElement("div");
-  banner.className = "ospite-banner";
-  banner.innerHTML = `📦 <strong>Spesa e preparazione condivise</strong> — carrello caricato: qui sotto trovi quantità, sintesi di preparazione e piano. Quando è il momento, premi ▶ Avvia.`;
+function bootPiano() {
+  const m = location.hash.match(/#p=([A-Za-z0-9\-_]+)/);
+  if (!m) return false;
+  let dati; try { dati = b64urlDecode(m[1]); } catch (_) { return false; }
+  if (!dati || !isFinite(dati.T) || !isFinite(dati.b)) return false;
+  document.body.classList.add("ospite");     // PRIMA di caricare: l'ospite non deve toccare il salvataggio locale
+  if (!caricaSelezione(dati)) { document.body.classList.remove("ospite"); return false; }
+  avviaRegia(dati.T, { base: dati.b, ospite: true });
+  bannerOspite(`🔥 <strong>Regia condivisa</strong> — si mangia ${fmtGiorno(dati.T)} alle ${formatTime(new Date(dati.T))}. Ogni passaggio qui sotto è sincronizzato sull'orologio; "Fatto" spegne solo la tua suoneria.`);
+  return true;
+}
+
+function bootOspiteLegacy() {           // vecchi link #g= (solo cottura)
+  const m = location.hash.match(/#g=([A-Za-z0-9\-_]+)/);
+  if (!m) return false;
+  let dati; try { dati = b64urlDecode(m[1]); } catch (_) { return false; }
+  if (!dati || !Array.isArray(dati.i) || !isFinite(dati.t)) return false;
+  document.body.classList.add("ospite");
+  if (!caricaSelezione(dati)) { document.body.classList.remove("ospite"); return false; }
+  const items = [...selezione].map(id => byId[id]);
+  const maxTot = Math.max(...items.map(totaleSec));
+  avviaRegia(dati.t + maxTot * 1000, { base: dati.t, ospite: true });
+  regia.eventi = regia.eventi.filter(e => e.fase === "cottura");   // il vecchio link era solo timer
+  renderTimelineRegia();
+  bannerOspite(`🔥 <strong>Griglia condivisa</strong> — avviata alle ${formatTime(new Date(dati.t))}.`);
+  return true;
+}
+
+function bootCarrello() {
+  const m = location.hash.match(/#c=([A-Za-z0-9\-_]+)/);
+  if (!m) return false;
+  let dati; try { dati = b64urlDecode(m[1]); } catch (_) { return false; }
+  if (!dati || !Array.isArray(dati.i)) return false;
+  if (!caricaSelezione(dati)) return false;
+  if (Array.isArray(dati.p)) {
+    const [a, b, ap, co] = dati.p;
+    if (a !== undefined) adultiEl.value = a;
+    if (b !== undefined) bambiniEl.value = b;
+    if (ap === "normale" || ap === "abbondante") appetitoEl.value = ap;
+    if (co === "pochi" || co === "abbondanti") contorniEl.value = co;
+  }
+  if (typeof dati.h === "string" && /^\d{2}:\d{2}$/.test(dati.h)) oraEl.value = dati.h;
+  aggiornaCarrello();
   const sez = document.getElementById("carrello-sez");
-  sez.insertBefore(banner, sez.firstChild);
+  const b = document.createElement("div");
+  b.className = "ospite-banner";
+  b.innerHTML = `📦 <strong>Spesa condivisa</strong> — carrello caricato: qui sotto quantità e lista della spesa. Poi imposta l'ora e premi OK.`;
+  sez.insertBefore(b, sez.firstChild);
   sez.scrollIntoView({ behavior: "smooth", block: "start" });
   return true;
 }
 
-/* --- modalità ospite: apre un link #g=... e segue la cottura --- */
-function bootOspite() {
-  const m = location.hash.match(/#g=([A-Za-z0-9\-_]+)/);
-  if (!m) return false;
+/* ================================================================
+   PERSISTENZA — un reload non perde né carrello né regia
+   ================================================================ */
+const LS_KEY = "carneaiferri.stato.v5";
 
-  let dati;
-  try { dati = b64urlDecode(m[1]); } catch (_) { return false; }
-  if (!dati || !Array.isArray(dati.i) || !isFinite(dati.t)) return false;
-
-  const items = dati.i.map(id => byId[id]).filter(Boolean);
-  if (!items.length) return false;
-
-  if (dati.o) {
-    Object.entries(dati.o).forEach(([id, [grado, spessore]]) => {
-      if (opzioni[id]) {
-        opzioni[id].grado = grado;
-        const s = parseFloat(spessore);
-        if (isFinite(s) && s > 0) opzioni[id].spessore = s;
-      }
-    });
-  }
-
-  document.body.classList.add("ospite");
-
-  const eventi   = costruisciEventi(items);
-  const fineMs   = dati.t + eventi[eventi.length - 1].tempo * 1000;
-  const inCorso  = Date.now() < fineMs;
-
-  const banner = document.createElement("div");
-  banner.className = "ospite-banner";
-  banner.innerHTML = inCorso
-    ? `🔥 <strong>Griglia condivisa — in corso</strong><br>Avviata alle ${formatTime(new Date(dati.t))}, in tavola alle ${formatTime(new Date(fineMs))}. Qui sotto l'andamento in tempo reale.`
-    : `✅ <strong>Griglia condivisa — completata</strong><br>Tutto in tavola alle ${formatTime(new Date(fineMs))}.`;
-  const cottura = document.getElementById("cottura");
-  cottura.insertBefore(banner, cottura.firstChild);
-
-  pianificaEventi(eventi, dati.t);
-  return true;
+function salvaStato() {
+  if (document.body.classList.contains("ospite")) return;
+  try {
+    const stato = {
+      sel: [...selezione],
+      opz: opzioniPayload([...selezione].map(id => byId[id])),
+      p: [adultiEl.value, bambiniEl.value, appetitoEl.value, contorniEl.value],
+      g: giornoEl.value, h: oraEl.value,
+      regia: regia && !regia.ospite ? { T: regia.T, b: regia.base, f: regia.eventi.map((e, i) => e.fatto ? i : -1).filter(i => i >= 0), s: regia.sliTot } : null,
+    };
+    localStorage.setItem(LS_KEY, JSON.stringify(stato));
+  } catch (_) {}
 }
 
-/* ================================================================
-   STICKY BANNER + INIT
-   ================================================================ */
-new IntersectionObserver(([entry]) => {
-  if (startTs !== null) nextStickyEl.classList.toggle("hidden", entry.isIntersecting);
-}, { threshold: 0 }).observe(document.getElementById("next"));
+function caricaStato() {
+  let st;
+  try { st = JSON.parse(localStorage.getItem(LS_KEY)); } catch (_) { return; }
+  if (!st) return;
+  if (Array.isArray(st.p)) {
+    const [a, b, ap, co] = st.p;
+    if (a !== undefined) adultiEl.value = a;
+    if (b !== undefined) bambiniEl.value = b;
+    if (ap) appetitoEl.value = ap;
+    if (co) contorniEl.value = co;
+  }
+  if (st.g && st.g >= oggiISO) giornoEl.value = st.g;
+  if (st.h) oraEl.value = st.h;
+  if (Array.isArray(st.sel) && st.sel.length) caricaSelezione({ i: st.sel, o: st.opz });
+  if (st.regia && isFinite(st.regia.T) && st.regia.T > Date.now() - 2 * 3600 * 1000) {
+    avviaRegia(st.regia.T, { base: st.regia.b, fatti: st.regia.f || [] });
+    if (regia) regia.sliTot = st.regia.s || 0;
+    renderRegiaBanner();
+  }
+}
 
+[adultiEl, bambiniEl, appetitoEl, contorniEl].forEach(el => el.addEventListener("input", salvaStato));
+
+/* ================================================================
+   AUDIO / WAKE LOCK / NOTIFICHE / LOG
+   ================================================================ */
+async function requestWakeLock() {
+  if (!("wakeLock" in navigator)) return;
+  try {
+    wakeLock = await navigator.wakeLock.request("screen");
+    wakeLock.addEventListener("release", () => { wakeLock = null; });
+  } catch (_) {}
+}
+
+function releaseWakeLock() {
+  if (wakeLock) { wakeLock.release(); wakeLock = null; }
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && regia && !wakeLock && !regia.ospite) requestWakeLock();
+});
+
+function initAudio() {
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) {}
+  }
+}
+
+function playBeep(type) {
+  initAudio();
+  if (!audioCtx) return;
+  if (type === "finale") {
+    [523, 659, 784].forEach((f, i) => {
+      const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+      o.connect(g); g.connect(audioCtx.destination);
+      o.frequency.value = f;
+      const t = audioCtx.currentTime + i * 0.18;
+      g.gain.setValueAtTime(0.35, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+      o.start(t); o.stop(t + 0.5);
+    });
+    return;
+  }
+  if (type === "prep") {                          // doppio squillo per la preparazione
+    [0, 0.45].forEach(dt => {
+      const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+      o.connect(g); g.connect(audioCtx.destination);
+      o.frequency.value = 988;
+      const t = audioCtx.currentTime + dt;
+      g.gain.setValueAtTime(0.4, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+      o.start(t); o.stop(t + 0.3);
+    });
+    return;
+  }
+  const freqs = { metti: 660, gira: 880, togli: 1100 };
+  const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.frequency.value = freqs[type] || 880;
+  gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+  osc.start(audioCtx.currentTime);
+  osc.stop(audioCtx.currentTime + 0.35);
+}
+
+document.addEventListener("click", initAudio, { once: true });
+
+function sendNotifica(testo) {
+  if ("Notification" in window && Notification.permission === "granted") {
+    try { new Notification("Griglia", { body: testo }); } catch (_) {}
+  }
+}
+
+function aggiungiLog(testo) {
+  const div = document.createElement("div");
+  div.textContent = `${formatTimeSec(new Date())} → ${testo}`;
+  logEl.prepend(div);
+}
+
+/* sticky: visibile quando la card del passo esce dallo schermo */
+new IntersectionObserver(([entry]) => {
+  if (regia) nextStickyEl.classList.toggle("hidden", entry.isIntersecting);
+}, { threshold: 0 }).observe(passoEl);
+
+/* ================================================================
+   INIT
+   ================================================================ */
 renderCatalogo();
 aggiornaContatore();
 aggiornaCarrello();
-aggiornaPiano();
-if (!bootOspite()) bootCarrello();
+const daLink = bootPiano() || bootOspiteLegacy() || bootCarrello();
+if (!daLink && !location.hash) caricaStato();
+aggiornaQuando();

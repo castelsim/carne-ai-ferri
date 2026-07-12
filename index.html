@@ -5,17 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <meta name="theme-color" content="#c2410c">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="description" content="Timer professionale per la cottura alla brace: scegli cosa hai comprato, l'app genera il piano di preparazione e sincronizza le cotture per finire tutte insieme.">
-  <title>Carne ai ferri — griglia sincronizzata</title>
-  <link rel="stylesheet" href="style.css?v=20260711f">
+  <meta name="description" content="La regia della grigliata: carrello e lista spesa automatici, poi imposti l'ora del pranzo e l'app ti guida a ogni passaggio — dalla marinatura al fuoco alla cottura sincronizzata.">
+  <title>Carne ai ferri — la regia della grigliata</title>
+  <link rel="stylesheet" href="style.css?v=20260712a">
 </head>
 <body>
   <noscript><p style="color:#b91c1c;font-weight:bold;">Questa applicazione richiede JavaScript attivo.</p></noscript>
 
   <header>
     <h1>Carne ai ferri</h1>
-    <p class="subtitle">Scegli cosa hai comprato. L'app ti dà la scheda di preparazione di ogni pezzo,
-    genera il piano della giornata e sincronizza le cotture perché finisca tutto insieme.</p>
+    <p class="subtitle">Scegli i tagli, condividi la lista della spesa, imposta l'ora del pranzo e premi OK:
+    la regia ti avvisa a ogni passaggio — marinatura, frigo, fuoco e cottura — e fa arrivare tutto in tavola insieme.</p>
   </header>
 
   <main>
@@ -29,8 +29,8 @@
     </section>
 
     <section id="carrello-sez">
-      <h2><span class="step">2</span> Carrello e quantità</h2>
-      <p class="section-hint">Quanta carne comprare, calcolata sulle persone e ripartita sui tagli scelti (osso e scarti inclusi).</p>
+      <h2><span class="step">2</span> Carrello e lista della spesa</h2>
+      <p class="section-hint">Quantità calcolate sulle persone (osso e scarti inclusi), con aromi e attrezzatura senza doppioni.</p>
       <div class="quantita-row">
         <label>Adulti <input type="number" id="q-adulti" min="0" max="99" value="4"></label>
         <label>Bambini <input type="number" id="q-bambini" min="0" max="99" value="0"></label>
@@ -48,36 +48,32 @@
         </label>
       </div>
       <div id="carrello"></div>
-      <button id="condividi-carrello" type="button" class="hidden">📤 Condividi spesa e preparazione</button>
-      <div id="sintesi"></div>
+      <button id="condividi-carrello" type="button" class="hidden">📤 Condividi la lista della spesa</button>
     </section>
 
-    <section id="preparazione">
-      <h2><span class="step">3</span> Piano di preparazione</h2>
-      <div class="pronto-row">
-        <label for="pronto-alle">Voglio mangiare alle</label>
-        <input type="time" id="pronto-alle">
-        <span class="pronto-hint">(facoltativo: il piano mostra gli orari esatti)</span>
+    <section id="quando">
+      <h2><span class="step">3</span> Quando si mangia?</h2>
+      <p class="section-hint">Quando hai tutto il necessario, imposta giorno e ora: al tuo OK parte la regia.</p>
+      <div class="quando-row">
+        <label>Giorno <input type="date" id="giorno-pranzo"></label>
+        <label>Ora <input type="time" id="ora-pranzo"></label>
       </div>
-      <div id="piano"></div>
-    </section>
-
-    <section id="cottura">
-      <h2><span class="step">4</span> Cottura</h2>
-      <div class="btn-row">
-        <button id="startBtn" type="button" disabled>▶ Avvia</button>
-        <button id="resetBtn" type="button" class="secondary hidden">⏹ Ferma</button>
-      </div>
-      <button id="shareBtn" type="button" class="hidden">📤 Condividi la griglia</button>
-      <p id="sel-count" class="sel-count">Nessun alimento selezionato</p>
+      <p id="quando-riepilogo" class="sel-count"></p>
       <p id="avviso" class="avviso hidden"></p>
+      <button id="okBtn" type="button" disabled>✔ OK — avvia la regia</button>
+    </section>
 
-      <div id="next" aria-live="polite"></div>
-
+    <section id="regia-sez" class="hidden">
+      <h2><span class="step">4</span> Regia</h2>
+      <div id="regia-banner"></div>
+      <div id="passo"></div>
+      <div class="btn-row">
+        <button id="sharePianoBtn" type="button">📤 Condividi il piano</button>
+        <button id="annullaBtn" type="button" class="secondary">⏹ Annulla</button>
+      </div>
       <div id="timeline">
         <ol id="timeline-list"></ol>
       </div>
-
       <div id="log"></div>
     </section>
   </main>
@@ -98,9 +94,10 @@
   <footer>
     <p>Tempi e temperature verificati su Weber IT/UK e USDA (sicurezza alimentare:
     macinati 71 °C, pollame 74 °C, tagli interi 63 °C + riposo).
+    Gli avvisi suonano con la pagina aperta: lo schermo resta acceso durante la regia.
     Un termometro a lettura istantanea vale più di qualsiasi timer.</p>
   </footer>
 
-  <script src="script.js?v=20260711f"></script>
+  <script src="script.js?v=20260712a"></script>
 </body>
 </html>

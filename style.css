@@ -394,6 +394,35 @@ h2 {
 
 #condividi-carrello:hover { background: var(--accento-scuro); }
 
+/* ---------------- Reparti spesa ---------------- */
+.reparto {
+  background: var(--card);
+  border: 2px solid var(--bordo);
+  border-radius: 12px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+.reparto h4 {
+  margin: 0;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--bordo);
+  font-size: .95rem;
+}
+
+.reparto ul { list-style: none; margin: 0; padding: 8px 14px 10px; }
+
+.reparto li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  font-size: .9rem;
+}
+
+.reparto .q { font-weight: 700; color: var(--accento-scuro); white-space: nowrap; }
+.reparto .per { color: var(--muted); font-size: .78rem; font-weight: 400; }
+
 /* ---------------- Sintesi operativa ---------------- */
 .sint-titolo { font-size: 1.05rem; margin: 22px 0 10px; }
 
@@ -506,8 +535,8 @@ h2 {
 /* ---------------- Cottura ---------------- */
 .btn-row { display: flex; gap: 12px; margin: 6px 0 8px; }
 
-button#startBtn, button#resetBtn {
-  flex: 1;
+#okBtn {
+  width: 100%;
   padding: 16px;
   font-size: 1.15rem;
   font-weight: 800;
@@ -515,13 +544,115 @@ button#startBtn, button#resetBtn {
   border-radius: 12px;
   cursor: pointer;
   color: #fff;
-  background: var(--accento);
+  background: var(--verde);
   box-shadow: var(--ombra);
 }
 
-button#startBtn:disabled { background: #d6c9bb; cursor: not-allowed; }
-button#resetBtn.secondary { background: #57534e; }
-button#resetBtn.conferma  { background: #b91c1c; }
+#okBtn:disabled { background: #d6c9bb; cursor: not-allowed; }
+
+#sharePianoBtn, #annullaBtn {
+  flex: 1;
+  padding: 13px;
+  font-size: 1rem;
+  font-weight: 800;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  color: #fff;
+  background: var(--accento);
+}
+
+#annullaBtn.secondary { background: #57534e; }
+
+.quando-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+  margin: 10px 0 12px;
+}
+
+.quando-row label { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+
+.quando-row input {
+  font-size: 1.05rem;
+  padding: 8px 10px;
+  border: 2px solid var(--bordo);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--testo);
+}
+
+/* --- regia: banner, card passaggio, timeline a fasi --- */
+#regia-banner {
+  padding: 12px 14px;
+  background: var(--card);
+  border: 2px solid var(--bordo);
+  border-left: 5px solid var(--accento);
+  border-radius: 10px;
+  margin-bottom: 12px;
+  font-size: .95rem;
+}
+
+#regia-banner .slittato { color: #b91c1c; font-weight: 700; }
+
+.passo {
+  background: var(--card);
+  border: 2px solid var(--bordo);
+  border-left: 6px solid var(--accento);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+
+.passo.due { background: var(--giallo-bg); border-color: var(--accento); }
+.passo.finita { border-left-color: var(--verde); text-align: center; }
+
+.passo .fase-tag {
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.passo .cosa { font-size: 1.15rem; font-weight: 800; margin: 4px 0; }
+
+.passo .quando {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--accento-scuro);
+  font-variant-numeric: tabular-nums;
+}
+
+.passo .dett { font-size: .88rem; color: var(--muted); margin: 6px 0 4px; }
+.passo .dett.ritardo { color: #b91c1c; font-weight: 700; }
+
+.passo .fatto {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 14px;
+  border: none;
+  border-radius: 10px;
+  background: var(--verde);
+  color: #fff;
+  font-weight: 800;
+  font-size: 1.05rem;
+  cursor: pointer;
+}
+
+.fase-sep {
+  list-style: none;
+  font-size: .78rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--muted);
+  font-weight: 800;
+  padding: 12px 0 4px !important;
+  border-bottom: none !important;
+}
+
+#timeline-list li.fired:not(.done) { background: var(--giallo-bg); }
 
 .sel-count { margin: 4px 0; color: var(--muted); font-size: .88rem; }
 
@@ -726,14 +857,12 @@ button#resetBtn.conferma  { background: #b91c1c; }
   line-height: 1.5;
 }
 
-/* l'ospite vede solo la sezione cottura */
+/* l'ospite vede solo la regia */
 body.ospite #scelta,
 body.ospite #carrello-sez,
-body.ospite #preparazione,
-body.ospite #cottura .btn-row,
-body.ospite #shareBtn,
-body.ospite #sel-count,
-body.ospite #cottura h2 { display: none; }
+body.ospite #quando,
+body.ospite #annullaBtn,
+body.ospite #regia-sez h2 { display: none; }
 
 /* ---------------- Footer ---------------- */
 footer {
