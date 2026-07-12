@@ -285,7 +285,7 @@ const CATALOGO = [
       acquisto: "Rack intero di costine. Fatti togliere la pleura (la membrana lucida sul lato osso) dal macellaio, o strappala tu aiutandoti con carta assorbente.",
       preparazione: "Rub 1 h prima (o la sera prima, in frigo scoperto): sale, pepe, paprika dolce, zucchero di canna, aglio in polvere. Fuori dal frigo 30 min prima di cuocere.",
       brace: "Griglia aperta: brace dolce e abbondante da un lato, rack dall'altro lato (o griglia alzata), lato osso in giù. MAI sopra la fiamma. Rabbocca carbonella a metà. (Se hai un coperchio: indiretta ~150°C.)",
-      cottura: "60-75 min girando ogni 10-15 e ruotando il rack. Pronte quando la carne si è ritirata di ~1 cm dall'osso e sollevando il rack la superficie si crepa. Termometro tra le ossa: 88-92°C. Ottime al naturale col solo rub; se le vuoi glassate, salsa BBQ solo negli ultimi 10 min (prima brucia).",
+      cottura: "60-75 min girando ogni 10-15 e ruotando il rack, spennellando a ogni girata con un mop leggero (birra o aceto di mele diluito) — A PENNELLO, mai versato: lava il rub e alza la cenere. Pronte quando la carne si è ritirata di ~1 cm dall'osso e sollevando il rack la superficie si crepa. Termometro tra le ossa: 88-92°C. Ottime al naturale col solo rub; se le vuoi glassate, salsa BBQ solo negli ultimi 10 min (prima brucia).",
       riposo: "10 min coperte, poi taglia tra le ossa.",
     },
   },
@@ -402,7 +402,7 @@ const CATALOGO = [
       acquisto: "Stinco di maiale PRECOTTO (sottovuoto): quello crudo alla brace richiede 3 ore, non è da grigliata.",
       preparazione: "Asciugalo, massaggialo con olio e paprika. Prepara una glassa (miele+senape, o birra e miele) per il finale.",
       brace: "Mista: prevalentemente zona media/indiretta, rotazioni frequenti.",
-      cottura: "25-30 min girando ogni 5-6 finché la cotenna è croccante e il cuore ben caldo (70°C+). Glassa solo negli ultimi 5-10 min: prima brucia.",
+      cottura: "25-30 min girando ogni 5-6 e bagnandolo con un goccio di birra a pennello, finché la cotenna è croccante e il cuore ben caldo (70°C+). Glassa solo negli ultimi 5-10 min: prima brucia.",
       riposo: "5 min.",
     },
   },
@@ -430,7 +430,7 @@ const CATALOGO = [
       acquisto: "Cosce o sovracosce con pelle e osso: restano succose e sono il taglio più adatto alla brace.",
       preparazione: "Marinatura 30 min+ (olio, limone, paprika, aglio) o solo sale mezz'ora prima. Asciuga la pelle: più asciutta = più croccante.",
       brace: "Griglia aperta: parte nella zona dolce, lontano dalla brace viva, e finisci sopra la brace per la rosolatura. Pelle verso l'alto all'inizio. (Con coperchio: indiretta ~180°C.)",
-      cottura: "25-35 min girando ogni 10-12. Il grasso della pelle fa fiammate in diretta: tienila d'occhio. Pronta a 75-80°C vicino all'osso, succhi chiari quando la punzecchi all'articolazione.",
+      cottura: "25-35 min girando ogni 10-12 e spennellando con olio o marinata riservata. Il grasso della pelle fa fiammate in diretta: tienila d'occhio. Pronta a 75-80°C vicino all'osso, succhi chiari quando la punzecchi all'articolazione.",
       riposo: "5 min.",
     },
   },
@@ -456,7 +456,7 @@ const CATALOGO = [
       acquisto: "Galletto (500-600 g) già aperto a libro — 'spatchcock' — o fattelo aprire dal macellaio lungo lo sterno.",
       preparazione: "Schiaccialo bene con il palmo o un batticarne. Marinata 1 h+ (anche la sera prima): olio, limone, peperoncino, rosmarino, aglio, pepe nero abbondante. Fuori dal frigo 30 min prima.",
       brace: "Griglia aperta, alta su brace dolce e uniforme, con un peso sopra (mattone avvolto in alluminio) che lo tiene aderente. (Con coperchio: indiretta ~180°C.)",
-      cottura: "~50 min: parte 15 min lato pelle in giù, poi gira ogni 10-15. Attento alle fiammate della marinata oleosa. Pronto a 80°C sotto l'articolazione della coscia, succhi chiari.",
+      cottura: "~50 min: parte 15 min lato pelle in giù, poi gira ogni 10-15 spennellando con la marinata tenuta da parte (mai quella stata a contatto col pollo crudo). Attento alle fiammate della marinata oleosa. Pronto a 80°C sotto l'articolazione della coscia, succhi chiari.",
       riposo: "8-10 min prima di dividerlo.",
     },
   },
@@ -497,7 +497,7 @@ const CATALOGO = [
       acquisto: "Fusi di tacchino da 500-700 g l'uno: uno basta per 2 persone.",
       preparazione: "Marinatura o rub 30 min+ (paprika, aglio, rosmarino). Pelle asciutta = pelle croccante.",
       brace: "Griglia aperta: zona dolce lontano dalla brace, girando spesso; finitura di 5 min sopra la brace per la pelle croccante. (Con coperchio: indiretta ~180°C.)",
-      cottura: "40-50 min girando ogni 10-12. È un pezzo grosso: pronto a 80°C vicino all'osso, succhi chiari.",
+      cottura: "40-50 min girando ogni 10-12, spennellando con olio o marinata. È un pezzo grosso: pronto a 80°C vicino all'osso, succhi chiari.",
       riposo: "5-8 min, poi affetta la polpa dall'osso.",
     },
   },
@@ -1272,6 +1272,18 @@ const NOTE_PREP = {
   patate: "prelessate 10 min con la buccia, poi a fette con olio e rosmarino",
 };
 
+/* Bagnatura in cottura: solo tagli lunghi a griglia aperta — a pennello,
+   mai versata (lava i condimenti e alza la cenere). I tagli rapidi NON si
+   bagnano: la superficie deve restare asciutta per fare crosta. */
+const BAGNA = {
+  costine: "mop a pennello (birra o aceto di mele diluito)",
+  rosticciana: "poco olio a pennello",
+  galletto: "marinata tenuta da parte, a pennello",
+  coscia_pollo: "olio o marinata riservata",
+  coscia_tacchino: "olio o marinata riservata",
+  stinco: "un goccio di birra a pennello",
+};
+
 function notaPrep(id) {
   const base = NOTE_PREP[id] || "";
   if (SCELTE[id] === undefined) return base;
@@ -1652,7 +1664,7 @@ function costruisciEventi(items) {
     if (interval) {
       const guard = Math.max(30, Math.round(interval * 0.3));
       for (let t = start + interval; t < end - guard; t += interval)
-        eventi.push({ off: t, tipo: "gira", titolo: `Gira ${item.nome} (ogni ${item.flip} min)`, dett: "" });
+        eventi.push({ off: t, tipo: "gira", titolo: `Gira ${item.nome}${BAGNA[item.id] ? " e spennella" : ""} (ogni ${item.flip} min)`, dett: BAGNA[item.id] || "" });
     } else {
       eventi.push({ off: start + Math.round(cott / 2), tipo: "gira", titolo: `Gira ${item.nome}`, dett: "" });
     }
