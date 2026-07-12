@@ -18,7 +18,24 @@ con un timer perché **tutto arrivi in tavola insieme**, riposo incluso.
 
 ---
 
-## Stato attuale (12-07-2026, v5) — LA REGIA + PWA
+## Stato attuale (12-07-2026, v6) — COTTURA ADATTIVA
+
+### Il motore v6 (spec di Simone: "l'app non deve fingere di conoscere il barbecue")
+- Per pezzo: stima ±20% (mai "minuti per lato"), residuo a intervallo, ETA,
+  integratore `cotto += dt*rate`
+- Girate = checkpoint ("Controlla il lato inferiore"): Girata / Non ancora /
+  Sta bruciando / Fuoco debole — ogni risposta muove stima o rate
+- Segnalazioni per pezzo sempre visibili (🔥🪵➕) + campo °C: il termometro
+  ricalcola il residuo dalla velocità reale di salita (mappa TARGETC)
+- Oltre l'80% → fase controlli ogni 2-3 min, il tempo sparisce; poi riposo
+  → impiatta → pronto
+- Header: "in tavola previsto vs obiettivo (+delta)"; i pezzi in attesa
+  slittano col servizio corrente per finire insieme
+- Condivisione = fotografia del piano (l'ospite vede il programma statico);
+  preparazione elastica invariata; persistenza pezzi con recupero al reload
+- `?v=20260712e`; 30/30 test
+
+## Storico v5 (12-07-2026) — LA REGIA + PWA
 
 ### Flusso in 4 fasi (ridisegno del 12-07)
 1. **Scegli i tagli** (ricerca + accordion, invariato)
