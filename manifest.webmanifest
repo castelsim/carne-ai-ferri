@@ -1,0 +1,17 @@
+{
+  "name": "Carne ai ferri — la regia della grigliata",
+  "short_name": "Carne ai ferri",
+  "description": "Carrello e lista spesa automatici, poi la regia ti guida a ogni passaggio: marinatura, fuoco e cottura sincronizzata.",
+  "lang": "it",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#faf7f2",
+  "theme_color": "#c2410c",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
