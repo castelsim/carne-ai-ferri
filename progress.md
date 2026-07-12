@@ -144,6 +144,12 @@ zero errori console). Script di test nello scratchpad di sessione (non nel repo)
 
 ## Storia modifiche
 
+### 12-07-2026 (v5.3) — Fix slittamento + bagnatura
+- Pranzo slitta solo sul vincolo rigido carbonella+cottura; comprimibili
+  scadute partono subito (bug segnalato da Simone alle 10:30)
+- Mappa BAGNA: spennellature per i tagli lunghi negli eventi Gira e schede
+- `?v=20260712d`; 57/57 test
+
 ### 12-07-2026 (v5.1) — Griglia aperta + rosticciana/rack + scelta salsa
 - Fix fonti coperchio-chiuso; 55 tagli; `?v=20260712b`; 52/52 test
 
