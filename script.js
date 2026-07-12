@@ -264,15 +264,28 @@ const CATALOGO = [
     },
   },
   {
-    id: "costine", nome: "Costine", categoria: "maiale", icona: "🦴",
-    tempo: 90 * 60, flip: "20-25", metodo: "indiretta", calore: "medio-basso",
+    id: "rosticciana", nome: "Rosticciana (costine separate)", categoria: "maiale", icona: "🦴",
+    tempo: 30 * 60, flip: "5", metodo: "diretta", calore: "medio",
+    tempInterna: "ben cotte: crosta dorata, carne che si ritira dall'osso",
+    riposo: 5, frigo: 30, marinatura: 0, salaPrima: false,
+    scheda: {
+      acquisto: "Costine già separate (o a coppie), carnose, ~2 cm di spessore. Calcola 3-4 a testa.",
+      preparazione: "Olio, sale, pepe e rosmarino prima di grigliare, alla toscana. Fuori dal frigo 30 min prima.",
+      brace: "Griglia aperta, brace media e uniforme: parte lato carne per la crosta, poi gira spesso. Il grasso che cola fa fiammate: tieni una zona libera dove spostarle.",
+      cottura: "25-35 min girando ogni 4-5 e spennellando con poco olio. Pronte quando la crosta è dorata, la carne si ritira dall'osso e non esce succo rosa.",
+      riposo: "5 min e si mangiano con le mani.",
+    },
+  },
+  {
+    id: "costine", nome: "Costine — rack intero", categoria: "maiale", icona: "🦴",
+    tempo: 70 * 60, flip: "10-15", metodo: "indiretta", calore: "medio-basso",
     tempInterna: "88-92°C tra le ossa per averle tenere",
     riposo: 10, frigo: 30, marinatura: 60, salaPrima: false,
     scheda: {
       acquisto: "Rack intero di costine. Fatti togliere la pleura (la membrana lucida sul lato osso) dal macellaio, o strappala tu aiutandoti con carta assorbente.",
       preparazione: "Rub 1 h prima (o la sera prima, in frigo scoperto): sale, pepe, paprika dolce, zucchero di canna, aglio in polvere. Fuori dal frigo 30 min prima di cuocere.",
-      brace: "Indiretta a ~150°C con coperchio: tutta la brace su un lato, costine sull'altro, lato osso in giù. Rabbocca carbonella dopo ~45 min.",
-      cottura: "~90 min girando ogni 20-25. Pronte quando la carne si è ritirata di ~1 cm dall'osso e sollevando il rack con le pinze la superficie si crepa. Termometro tra le ossa: 88-92°C. Salsa BBQ solo negli ultimi 10 min: prima brucerebbe.",
+      brace: "Griglia aperta: brace dolce e abbondante da un lato, rack dall'altro lato (o griglia alzata), lato osso in giù. MAI sopra la fiamma. Rabbocca carbonella a metà. (Se hai un coperchio: indiretta ~150°C.)",
+      cottura: "60-75 min girando ogni 10-15 e ruotando il rack. Pronte quando la carne si è ritirata di ~1 cm dall'osso e sollevando il rack la superficie si crepa. Termometro tra le ossa: 88-92°C. Ottime al naturale col solo rub; se le vuoi glassate, salsa BBQ solo negli ultimi 10 min (prima brucia).",
       riposo: "10 min coperte, poi taglia tra le ossa.",
     },
   },
@@ -416,7 +429,7 @@ const CATALOGO = [
     scheda: {
       acquisto: "Cosce o sovracosce con pelle e osso: restano succose e sono il taglio più adatto alla brace.",
       preparazione: "Marinatura 30 min+ (olio, limone, paprika, aglio) o solo sale mezz'ora prima. Asciuga la pelle: più asciutta = più croccante.",
-      brace: "Mista: parte in zona indiretta (~180°C, coperchio se c'è), rosolatura finale sulla brace. Pelle verso l'alto all'inizio.",
+      brace: "Griglia aperta: parte nella zona dolce, lontano dalla brace viva, e finisci sopra la brace per la rosolatura. Pelle verso l'alto all'inizio. (Con coperchio: indiretta ~180°C.)",
       cottura: "25-35 min girando ogni 10-12. Il grasso della pelle fa fiammate in diretta: tienila d'occhio. Pronta a 75-80°C vicino all'osso, succhi chiari quando la punzecchi all'articolazione.",
       riposo: "5 min.",
     },
@@ -442,7 +455,7 @@ const CATALOGO = [
     scheda: {
       acquisto: "Galletto (500-600 g) già aperto a libro — 'spatchcock' — o fattelo aprire dal macellaio lungo lo sterno.",
       preparazione: "Schiaccialo bene con il palmo o un batticarne. Marinata 1 h+ (anche la sera prima): olio, limone, peperoncino, rosmarino, aglio, pepe nero abbondante. Fuori dal frigo 30 min prima.",
-      brace: "Indiretta a calore medio (~180°C) con coperchio, oppure griglia alta su brace dolce. Un peso sopra (mattone avvolto in alluminio) lo tiene aderente e uniforme.",
+      brace: "Griglia aperta, alta su brace dolce e uniforme, con un peso sopra (mattone avvolto in alluminio) che lo tiene aderente. (Con coperchio: indiretta ~180°C.)",
       cottura: "~50 min: parte 15 min lato pelle in giù, poi gira ogni 10-15. Attento alle fiammate della marinata oleosa. Pronto a 80°C sotto l'articolazione della coscia, succhi chiari.",
       riposo: "8-10 min prima di dividerlo.",
     },
@@ -483,7 +496,7 @@ const CATALOGO = [
     scheda: {
       acquisto: "Fusi di tacchino da 500-700 g l'uno: uno basta per 2 persone.",
       preparazione: "Marinatura o rub 30 min+ (paprika, aglio, rosmarino). Pelle asciutta = pelle croccante.",
-      brace: "Indiretta (~180°C) con coperchio; finitura di 5 min in diretta per la pelle.",
+      brace: "Griglia aperta: zona dolce lontano dalla brace, girando spesso; finitura di 5 min sopra la brace per la pelle croccante. (Con coperchio: indiretta ~180°C.)",
       cottura: "40-50 min girando ogni 10-12. È un pezzo grosso: pronto a 80°C vicino all'osso, succhi chiari.",
       riposo: "5-8 min, poi affetta la polpa dall'osso.",
     },
@@ -782,6 +795,7 @@ const SPESA = {
   luganega:           { peso: null, resa: 1,    unita: null },
   salamella:          { peso: 120,  resa: 1,    unita: "salamelle" },
   costine:            { peso: 1200, resa: 0.45, unita: "rack" },
+  rosticciana:        { peso: 130,  resa: 0.45, unita: "costine" },
   pancetta:           { peso: 50,   resa: 1,    unita: "fette" },
   braciola:           { peso: 150,  resa: 0.9,  unita: "braciole" },
   costoletta:         { peso: 250,  resa: 0.8,  unita: "costolette" },
@@ -883,6 +897,7 @@ const ICONE = {
 };
 
 const GLIFO = {
+  rosticciana: "costine",
   costata: "costata", spiedini_manzo: "spiedino", spiedini_vitello: "spiedino",
   spiedini_maiale: "spiedino", spiedini_pollo: "spiedino", spiedini_tacchino: "spiedino",
   spiedini_agnello: "spiedino",
@@ -914,6 +929,8 @@ const opzioni = {};        // per gli alimenti con grado+spessore
 CATALOGO.filter(i => i.gradi).forEach(i => {
   opzioni[i.id] = { grado: i.id === "costata" ? "rare" : "media", spessore: i.spessoreBase };
 });
+
+const SCELTE = { costine: "nature", rosticciana: "nature" };   // "nature" | "glassa"
 
 let wakeLock  = null;
 let audioCtx  = null;
@@ -1021,7 +1038,7 @@ function renderCatalogo() {
       });
 
       grid.appendChild(card);
-      if (item.gradi) grid.appendChild(buildOpzioni(item));
+      if (item.gradi || SCELTE[item.id] !== undefined) grid.appendChild(buildOpzioni(item));
     });
 
     acc.appendChild(head);
@@ -1073,6 +1090,23 @@ function buildOpzioni(item) {
   const wrap = document.createElement("div");
   wrap.className = "item-opts hidden";
   wrap.id = `opts-${item.id}`;
+
+  if (!item.gradi) {                       // solo scelta salsa (costine/rosticciana)
+    wrap.innerHTML = `
+      <label>Finale:
+        <select data-scelta="${item.id}">
+          <option value="nature"${SCELTE[item.id] === "nature" ? " selected" : ""}>Al naturale (senza salsa)</option>
+          <option value="glassa"${SCELTE[item.id] === "glassa" ? " selected" : ""}>Glassa BBQ negli ultimi 10 min</option>
+        </select>
+      </label>`;
+    wrap.querySelector("select").addEventListener("change", (e) => {
+      SCELTE[item.id] = e.target.value;
+      aggiornaCarrello();
+      salvaStato();
+    });
+    return wrap;
+  }
+
   wrap.innerHTML = `
     <label>Cottura:
       <select data-grado="${item.id}">
@@ -1170,7 +1204,7 @@ const TRATT = {
   costata: "nudo",      tagliata: "salesubito",  hamburger: "salesubito",
   picanha: "salesubito", asado: "salesubito",
   braciola_vitello: "salesubito", tagliata_vitello: "salesubito", salsiccia_vitello: "olio",
-  salsiccia: "nudo",    luganega: "nudo",        salamella: "olio",
+  salsiccia: "nudo",    luganega: "nudo",        salamella: "olio",   rosticciana: "olio",
   pancetta: "nudo",     braciola: "salesubito",  wurstel: "nudo",
   capocollo: "salesubito", bombette: "nudo",     stinco: "olio",
   hamburger_tacchino: "olio",
@@ -1199,6 +1233,7 @@ const NOTE_PREP = {
   luganega: "a chiocciola con due spiedi incrociati; non bucarla",
   salamella: "pennellata d'olio; non bucarla",
   costine: "rub: sale, pepe, paprika dolce, zucchero di canna, aglio; via la pleura",
+  rosticciana: "olio, sale, pepe e rosmarino prima di grigliare",
   pancetta: "niente: è già condita dal suo grasso",
   braciola: "filo d'olio e sale subito prima; incidi il bordo di grasso",
   costoletta: "sale 40+ min prima; incidi il grasso sul bordo",
@@ -1236,6 +1271,12 @@ const NOTE_PREP = {
   radicchio: "a quarti col torsolo; olio e sale prima",
   patate: "prelessate 10 min con la buccia, poi a fette con olio e rosmarino",
 };
+
+function notaPrep(id) {
+  const base = NOTE_PREP[id] || "";
+  if (SCELTE[id] === undefined) return base;
+  return base + (SCELTE[id] === "glassa" ? " · glassa BBQ pronta per il finale" : " · al naturale, senza salsa");
+}
 
 function gruppoDi(item) {
   if (item.marinatura >= 60) return "marinata60";
@@ -1367,7 +1408,8 @@ const AROMI = {
   salsiccia: ["panini"],
   luganega: [],
   salamella: ["olio", "panini"],
-  costine: ["sale", "pepe", "paprika", "zucchero", "agliopolvere", "salsabbq"],
+  costine: ["sale", "pepe", "paprika", "zucchero", "agliopolvere"],
+  rosticciana: ["olio", "sale", "pepe", ["rosmarino", 1]],
   pancetta: [],
   braciola: ["olio", "sale"],
   costoletta: ["sale", "olio"],
@@ -1419,12 +1461,15 @@ function spesaDispensa(items) {
       if (!acc[id].per.includes(item.nome)) acc[id].per.push(item.nome);
     });
   });
-  return Object.entries(acc).map(([id, a]) => {
+  const righe = Object.entries(acc).map(([id, a]) => {
     const d = ING[id];
     const q = d.q ? d.q : (d.u !== undefined && a.tot > 0 ? `${a.tot}${d.u ? " " + d.u : ""}` : "q.b.");
     const per = a.per.length <= 2 && items.length > 1 ? a.per.slice(0, 2).join(", ") : "";
     return { nome: d.n, q, per };
   });
+  const glassati = items.filter(i => SCELTE[i.id] === "glassa");
+  if (glassati.length) righe.push({ nome: "Salsa BBQ", q: "1 bottiglia", per: `glassa · ${glassati.map(i => i.nome).join(", ")}` });
+  return righe;
 }
 
 function spesaAttrezzi(items) {
@@ -1559,7 +1604,7 @@ function passiPreparazione(items) {
   const p = [];
   const mar60 = items.filter(i => i.marinatura >= 60);
   const mar30 = items.filter(i => i.marinatura > 0 && i.marinatura < 60);
-  const dett = list => list.map(i => `${i.nome}: ${NOTE_PREP[i.id] || ""}`).join(" · ");
+  const dett = list => list.map(i => `${i.nome}: ${notaPrep(i.id)}`).join(" · ");
 
   if (mar60.length) p.push({ off: -100 * 60, margine: 15 * 60, icona: "🥣",
     titolo: `Prepara marinata/rub e metti a marinare: ${mar60.map(i => i.nome).join(", ")}`,
@@ -1598,7 +1643,7 @@ function costruisciEventi(items) {
     const cott  = cotturaSec(item);
     const start = maxTot - totaleSec(item);
     const end   = start + cott;
-    eventi.push({ off: start, tipo: "metti", titolo: `Metti ${item.nome} (${fmtMin(cott)}, ${item.metodo})`, dett: NOTE_PREP[item.id] || "" });
+    eventi.push({ off: start, tipo: "metti", titolo: `Metti ${item.nome} (${fmtMin(cott)}, ${item.metodo})`, dett: notaPrep(item.id) });
     const avgMin = averageRange(item.flip);
     const interval = avgMin ? Math.round(avgMin * 60) : null;
     if (interval) {
@@ -1607,6 +1652,9 @@ function costruisciEventi(items) {
         eventi.push({ off: t, tipo: "gira", titolo: `Gira ${item.nome} (ogni ${item.flip} min)`, dett: "" });
     } else {
       eventi.push({ off: start + Math.round(cott / 2), tipo: "gira", titolo: `Gira ${item.nome}`, dett: "" });
+    }
+    if (SCELTE[item.id] === "glassa" && cott > 15 * 60) {
+      eventi.push({ off: end - 10 * 60, tipo: "gira", titolo: `Spennella la glassa BBQ su ${item.nome}`, dett: "Solo ora: prima brucerebbe." });
     }
     eventi.push({ off: end, tipo: "togli",
       titolo: item.riposo > 0 ? `Togli ${item.nome} — riposo ${item.riposo} min sotto alluminio` : `Togli ${item.nome} — pronto!`, dett: "" });
@@ -1854,6 +1902,12 @@ function opzioniPayload(items) {
   return Object.keys(o).length ? o : undefined;
 }
 
+function sceltePayload(items) {
+  const sc = {};
+  items.filter(i => SCELTE[i.id] !== undefined).forEach(i => { sc[i.id] = SCELTE[i.id]; });
+  return Object.keys(sc).length ? sc : undefined;
+}
+
 async function condividiTesto(testo, btn, etichetta) {
   if (navigator.share) {
     try { await navigator.share({ text: testo }); return; } catch (_) { /* annullato: fallback */ }
@@ -1880,6 +1934,8 @@ function linkPiano() {
   const dati = { i: items.map(i => i.id), T: regia.T, b: regia.base };
   const o = opzioniPayload(items);
   if (o) dati.o = o;
+  const sc = sceltePayload(items);
+  if (sc) dati.sc = sc;
   return `${location.href.split("#")[0]}#p=${b64urlEncode(dati)}`;
 }
 
@@ -1913,6 +1969,13 @@ function caricaSelezione(dati) {
     const opts = document.getElementById(`opts-${id}`);
     if (opts) { opts.querySelector("select").value = opzioni[id].grado; opts.querySelector("input").value = opzioni[id].spessore; }
     aggiornaTempoCard(byId[id]);
+  });
+  if (dati.sc) Object.entries(dati.sc).forEach(([id, v]) => {
+    if (SCELTE[id] !== undefined && (v === "nature" || v === "glassa")) {
+      SCELTE[id] = v;
+      const sel = document.querySelector(`[data-scelta="${id}"]`);
+      if (sel) sel.value = v;
+    }
   });
   ids.forEach(id => { if (!selezione.has(id)) toggleItem(id); });
   new Set(ids.map(id => byId[id].categoria)).forEach(cat => {
@@ -1988,6 +2051,7 @@ function salvaStato() {
     const stato = {
       sel: [...selezione],
       opz: opzioniPayload([...selezione].map(id => byId[id])),
+      sc: sceltePayload([...selezione].map(id => byId[id])),
       p: [adultiEl.value, bambiniEl.value, appetitoEl.value, contorniEl.value],
       g: giornoEl.value, h: oraEl.value,
       regia: regia && !regia.ospite ? { T: regia.T, b: regia.base, f: regia.eventi.map((e, i) => e.fatto ? i : -1).filter(i => i >= 0), s: regia.sliTot } : null,
@@ -2009,7 +2073,7 @@ function caricaStato() {
   }
   if (st.g && st.g >= oggiISO) giornoEl.value = st.g;
   if (st.h) oraEl.value = st.h;
-  if (Array.isArray(st.sel) && st.sel.length) caricaSelezione({ i: st.sel, o: st.opz });
+  if (Array.isArray(st.sel) && st.sel.length) caricaSelezione({ i: st.sel, o: st.opz, sc: st.sc });
   if (st.regia && isFinite(st.regia.T) && st.regia.T > Date.now() - 2 * 3600 * 1000) {
     avviaRegia(st.regia.T, { base: st.regia.b, fatti: st.regia.f || [] });
     if (regia) regia.sliTot = st.regia.s || 0;
