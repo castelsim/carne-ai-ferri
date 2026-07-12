@@ -38,6 +38,15 @@ con un timer perché **tutto arrivi in tavola insieme**, riposo incluso.
      cottura identica garantita; ospite read-only con Fatto locale
    - persistenza localStorage (reload non perde nulla); retro-compat #c=/#g=
 
+### Griglia aperta + costine (fix 12-07 pomeriggio)
+- Schede riscritte per GRIGLIA APERTA sulla brace (il coperchio è solo
+  alternativa tra parentesi): costine, coscia pollo, galletto, fuso tacchino
+- Costine sdoppiate: Rosticciana (separate, ~30 min diretta) e Rack intero
+  (60-75 min zona dolce) → catalogo a 55 tagli
+- Scelta salsa BBQ per costine/rosticciana, default AL NATURALE: pannello
+  sulla card, salsa in lista spesa solo se scelta, evento 'Spennella la
+  glassa' in regia 10 min prima del togli; scelta nei link e nel salvataggio
+
 ### PWA
 manifest + service worker cache-first (VERSIONE in sw.js da allineare al ?v=)
 + icone dal glifo bistecca: installabile sulla home, offline, standalone.
@@ -134,6 +143,9 @@ zero errori console). Script di test nello scratchpad di sessione (non nel repo)
 ---
 
 ## Storia modifiche
+
+### 12-07-2026 (v5.1) — Griglia aperta + rosticciana/rack + scelta salsa
+- Fix fonti coperchio-chiuso; 55 tagli; `?v=20260712b`; 52/52 test
 
 ### 12-07-2026 (v5) — La regia della grigliata + PWA
 - Flusso unico ora-del-pranzo → OK → passaggi guidati; spesa a reparti con
