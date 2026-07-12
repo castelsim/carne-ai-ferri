@@ -18,7 +18,35 @@ con un timer perché **tutto arrivi in tavola insieme**, riposo incluso.
 
 ---
 
-## Stato attuale (11-07-2026, v4) — icone SVG, sintesi operativa, condivisioni
+## Stato attuale (12-07-2026, v5) — LA REGIA + PWA
+
+### Flusso in 4 fasi (ridisegno del 12-07)
+1. **Scegli i tagli** (ricerca + accordion, invariato)
+2. **Carrello e lista della spesa**: quantità automatiche sulle persone +
+   spesa precisa a reparti — macellaio (pesi+pezzi), ortolano, dispensa&aromi
+   senza doppioni (mappe ING/AROMI, "Limoni 2 · galletto, spiedini"),
+   attrezzatura (carbonella stimata, spiedi, alluminio, gratella, mattone,
+   termometro). "Condividi la lista della spesa" = SOLO spesa.
+3. **Quando si mangia?**: giorno (default oggi) + ora → riepilogo orari →
+   **OK — avvia la regia** (con preavviso ⚠ se si è già oltre)
+4. **Regia** (modello C ibrido scelto su mockup in Chrome):
+   - preparazione ELASTICA: suona al passaggio, ri-suona ogni minuto,
+     "Fatto" oltre il margine fa slittare piano e ora del pranzo
+   - cottura SUL BINARIO: orologio, "Fatto" solo spunta → tutto insieme
+   - card passaggio corrente + timeline a fasi + log
+   - **Condividi il piano** (#p=): ogni telefono ricalcola gli stessi orari,
+     cottura identica garantita; ospite read-only con Fatto locale
+   - persistenza localStorage (reload non perde nulla); retro-compat #c=/#g=
+
+### PWA
+manifest + service worker cache-first (VERSIONE in sw.js da allineare al ?v=)
++ icone dal glifo bistecca: installabile sulla home, offline, standalone.
+Notifiche a telefono bloccato = servirebbero push server (escluso): durante
+la regia lo schermo resta acceso col wake lock.
+
+---
+
+## Storico v4 (11-07-2026) — icone SVG, sintesi operativa, condivisioni
 
 ### Alimenti supportati — 54 in 8 categorie (data-driven, `CATALOGO` in script.js)
 | Categoria | Alimenti |
@@ -106,6 +134,11 @@ zero errori console). Script di test nello scratchpad di sessione (non nel repo)
 ---
 
 ## Storia modifiche
+
+### 12-07-2026 (v5) — La regia della grigliata + PWA
+- Flusso unico ora-del-pranzo → OK → passaggi guidati; spesa a reparti con
+  aromi/attrezzatura; link #p=; localStorage; manifest+SW+icone
+- Cache-busting `?v=20260712a` — 47/47 test (suite su http locale)
 
 ### 11-07-2026 (v4) — Icone SVG, sintesi operativa, condivisione carrello
 - 45+ glifi vettoriali line-art, chip per categoria; sintesi per trattamento;
