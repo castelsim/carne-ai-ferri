@@ -1972,6 +1972,7 @@ function tickRegia() {
     ? !curPrep
     : (!curPrep || evs.every(e => e.fatto)) && regia.pezzi.every(p => p.stato === "pronto");
   if (finita) {
+    regia.finita = true;
     passoEl.innerHTML = `<div class="passo finita"><div class="cosa">🍽 Tutto in tavola — buon appetito!</div></div>`;
     nextStickyEl.classList.add("hidden");
     clearInterval(regiaTicker); regiaTicker = null;
@@ -2503,7 +2504,8 @@ function aggiungiLog(testo) {
 
 /* sticky: visibile quando la card del passo esce dallo schermo */
 new IntersectionObserver(([entry]) => {
-  if (regia) nextStickyEl.classList.toggle("hidden", entry.isIntersecting);
+  if (regia && !regia.finita) nextStickyEl.classList.toggle("hidden", entry.isIntersecting);
+  else nextStickyEl.classList.add("hidden");
 }, { threshold: 0 }).observe(passoEl);
 
 /* ================================================================
