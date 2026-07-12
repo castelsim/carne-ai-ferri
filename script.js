@@ -1565,8 +1565,11 @@ function aggiornaQuando() {
   const maxTot = Math.max(...items.map(totaleSec));
   const inizioPrep = T - maxTot * 1000 + (passiPreparazione(items)[0]?.off ?? 0) * 1000;
   let txt = `Si mangia ${fmtGiorno(T)} alle ${formatTime(new Date(T))} · primi preparativi alle ${formatTime(new Date(inizioPrep))} · prima carne sulla griglia alle ${formatTime(new Date(T - maxTot * 1000))}.`;
-  if (inizioPrep < Date.now() && T > Date.now()) {
-    txt += " ⚠ Sei già oltre l'inizio: con OK il piano parte subito e l'ora del pranzo slitta.";
+  const vincolo = T - maxTot * 1000 - 40 * 60 * 1000;   // carbonella + cottura
+  if (vincolo < Date.now() && T > Date.now()) {
+    txt += ` ⚠ Non ci sta più: con OK si mangerà alle ${formatTime(new Date(Date.now() + 40 * 60 * 1000 + maxTot * 1000))}.`;
+  } else if (inizioPrep < Date.now() && T > Date.now()) {
+    txt += " · Alcune preparazioni (es. marinatura) partiranno subito, con meno anticipo del previsto: l'ora del pranzo NON cambia.";
   }
   quandoRiep.textContent = txt;
 }
@@ -1606,16 +1609,16 @@ function passiPreparazione(items) {
   const mar30 = items.filter(i => i.marinatura > 0 && i.marinatura < 60);
   const dett = list => list.map(i => `${i.nome}: ${notaPrep(i.id)}`).join(" · ");
 
-  if (mar60.length) p.push({ off: -100 * 60, margine: 15 * 60, icona: "🥣",
+  if (mar60.length) p.push({ off: -100 * 60, margine: 15 * 60, comprimibile: true, icona: "🥣",
     titolo: `Prepara marinata/rub e metti a marinare: ${mar60.map(i => i.nome).join(", ")}`,
     dett: dett(mar60) + (mar60.length > 1 ? " — una ciotola unica, poi dividi nei sacchetti." : "") });
-  if (mar30.length) p.push({ off: -70 * 60, margine: 15 * 60, icona: "🥣",
+  if (mar30.length) p.push({ off: -70 * 60, margine: 15 * 60, comprimibile: true, icona: "🥣",
     titolo: `Metti a marinare (~30 min): ${mar30.map(i => i.nome).join(", ")}`, dett: dett(mar30) });
   if (items.some(i => CON_SPIEDI_LEGNO.includes(i.id)))
-    p.push({ off: -50 * 60, margine: 20 * 60, icona: "💧", titolo: "Metti a bagno gli spiedi di legno",
+    p.push({ off: -50 * 60, margine: 20 * 60, comprimibile: true, icona: "💧", titolo: "Metti a bagno gli spiedi di legno",
       dett: "30 min in acqua: non bruceranno sulla brace." });
   const daSalare = items.filter(i => i.salaPrima);
-  if (daSalare.length) p.push({ off: -45 * 60, margine: 15 * 60, icona: "🧂",
+  if (daSalare.length) p.push({ off: -45 * 60, margine: 15 * 60, comprimibile: true, icona: "🧂",
     titolo: `Sala in anticipo: ${daSalare.map(i => i.nome).join(", ")}`, dett: dett(daSalare) });
   const indiretta = items.some(i => i.metodo !== "diretta");
   p.push({ off: -40 * 60, margine: 5 * 60, icona: "🔥",
@@ -1624,7 +1627,7 @@ function passiPreparazione(items) {
   const gruppiFrigo = {};
   items.filter(i => i.frigo > 0).forEach(i => (gruppiFrigo[i.frigo] = gruppiFrigo[i.frigo] || []).push(i));
   Object.keys(gruppiFrigo).map(Number).sort((a, b) => b - a).forEach(min => {
-    p.push({ off: -min * 60, margine: Math.max(5 * 60, min * 20), icona: "🧊",
+    p.push({ off: -min * 60, margine: Math.max(5 * 60, min * 20), comprimibile: true, icona: "🧊",
       titolo: `Fuori dal frigo: ${gruppiFrigo[min].map(i => i.nome).join(", ")}`,
       dett: "A temperatura ambiente cuoce uniforme." });
   });
@@ -1679,14 +1682,27 @@ function avviaRegia(T, opts = {}) {
   const eventi = pianoRegia(items);
 
   if (opts.base === undefined) {
-    const primo = base + eventi[0].off * 1000;
-    if (primo < Date.now()) {
-      const delta = Date.now() - primo;
+    // vincolo rigido: accensione carbonella (40 min) + cottura. Le altre
+    // preparazioni sono comprimibili (es. marinatura più breve) e NON
+    // spostano il pranzo.
+    const vincolo = base - 40 * 60 * 1000;
+    if (vincolo < Date.now()) {
+      const delta = Date.now() - vincolo;
       base += delta;
       T += delta;
     }
   }
   eventi.forEach(e => { e.abs = base + e.off * 1000; });
+  if (opts.base === undefined) {
+    // i passaggi comprimibili già "scaduti" partono adesso, in fila,
+    // senza toccare gli orari del resto del piano
+    let t = Date.now();
+    eventi.filter(e => e.comprimibile && e.abs < t).forEach(e => {
+      e.abs = t;
+      t += 120 * 1000;
+    });
+    eventi.sort((a, b) => a.abs - b.abs);   // sort stabile: a parità resta l'ordine metti/gira/togli
+  }
   (opts.fatti || []).forEach(i => { if (eventi[i]) { eventi[i].fatto = true; eventi[i].fired = true; } });
   // passato: niente beep; la cottura è sul binario quindi si spunta da sola,
   // e per l'ospite anche la preparazione (non può agire sul passato)
