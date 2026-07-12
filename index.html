@@ -12,7 +12,7 @@
   <link rel="apple-touch-icon" href="icons/icon-180.png">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Carne ai ferri">
-  <link rel="stylesheet" href="style.css?v=20260712d">
+  <link rel="stylesheet" href="style.css?v=20260712e">
 </head>
 <body>
   <noscript><p style="color:#b91c1c;font-weight:bold;">Questa applicazione richiede JavaScript attivo.</p></noscript>
@@ -71,7 +71,9 @@
     <section id="regia-sez" class="hidden">
       <h2><span class="step">4</span> Regia</h2>
       <div id="regia-banner"></div>
+      <div id="servizio"></div>
       <div id="passo"></div>
+      <div id="pezzi"></div>
       <div class="btn-row">
         <button id="sharePianoBtn" type="button">📤 Condividi il piano</button>
         <button id="annullaBtn" type="button" class="secondary">⏹ Annulla</button>
@@ -103,7 +105,7 @@
     Un termometro a lettura istantanea vale più di qualsiasi timer.</p>
   </footer>
 
-  <script src="script.js?v=20260712d"></script>
+  <script src="script.js?v=20260712e"></script>
   <script>
     if ("serviceWorker" in navigator && location.protocol === "https:") {
       navigator.serviceWorker.register("sw.js").catch(() => {});

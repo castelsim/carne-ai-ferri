@@ -1,7 +1,7 @@
 /* Service worker — cache statica per uso offline/installata.
    IMPORTANTE: a ogni release incrementare VERSIONE insieme al
    query string ?v= in index.html. */
-const VERSIONE = "20260712d";
+const VERSIONE = "20260712e";
 const CACHE = `carneaiferri-${VERSIONE}`;
 
 const PRECACHE = [

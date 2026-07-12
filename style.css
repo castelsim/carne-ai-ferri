@@ -872,3 +872,78 @@ footer {
   color: var(--muted);
   font-size: .8rem;
 }
+
+/* ---------------- Cottura adattiva (v6) ---------------- */
+#servizio {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  background: var(--card);
+  border: 2px solid var(--bordo);
+  border-radius: 12px;
+  padding: 10px 16px;
+  margin-bottom: 12px;
+}
+
+#servizio:empty { display: none; }
+#servizio .lbl { display: block; font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+#servizio .ora { font-size: 1.5rem; font-weight: 800; color: var(--accento-scuro); font-variant-numeric: tabular-nums; }
+#servizio .ora.obiettivo { color: var(--muted); }
+#servizio .delta { font-weight: 800; color: #b45309; }
+#servizio .delta.ok { color: var(--verde); }
+
+#pezzi { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+#pezzi:empty { display: none; }
+
+.pezzo {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 4px 12px;
+  align-items: center;
+  background: var(--card);
+  border: 2px solid var(--bordo);
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+
+.pezzo.fuoco { border-color: var(--accento); background: var(--giallo-bg); }
+.pezzo .stato { font-size: 1.3rem; }
+.pezzo .nome { font-weight: 800; }
+.pezzo .m { font-size: .82rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.pezzo .eta { text-align: right; font-weight: 800; color: var(--accento-scuro); font-variant-numeric: tabular-nums; }
+.pezzo .eta .lbl { display: block; font-weight: 400; font-size: .68rem; color: var(--muted); text-transform: uppercase; }
+
+.barra { height: 7px; background: var(--bordo); border-radius: 4px; overflow: hidden; margin-top: 4px; }
+.barra > i { display: block; height: 100%; background: var(--accento); border-radius: 4px; transition: width .5s linear; }
+
+.mini-riga { display: flex; gap: 10px; align-items: center; margin-top: 6px; flex-wrap: wrap; }
+.mini-az { display: inline-flex; gap: 6px; }
+.mini-az button, .mini-temp button {
+  padding: 5px 9px;
+  border: 2px solid var(--bordo);
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  font-size: .85rem;
+  font-weight: 700;
+}
+.mini-temp { display: inline-flex; gap: 6px; align-items: center; font-size: .9rem; }
+.mini-temp input { width: 62px; padding: 5px 6px; border: 2px solid var(--bordo); border-radius: 8px; font-size: .95rem; text-align: center; }
+
+.passo .risposte { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-top: 10px; }
+.passo .risposte button {
+  padding: 13px 8px;
+  border-radius: 10px;
+  border: 2px solid var(--bordo);
+  background: var(--bg);
+  font-weight: 800;
+  font-size: .92rem;
+  cursor: pointer;
+}
+.passo .risposte button.ok { background: var(--verde); border-color: var(--verde); color: #fff; }
+.passo .risposte button.warn { border-color: #b45309; color: #92400e; }
+.passo .risposte button.hot { border-color: #b91c1c; color: #991b1b; }
+.temp-chk { grid-column: 1 / -1; display: flex; gap: 8px; align-items: center; }
+.temp-chk input { width: 80px; padding: 8px; border: 2px solid var(--bordo); border-radius: 8px; font-size: 1.05rem; text-align: center; }
+.temp-chk button { flex: 1; }

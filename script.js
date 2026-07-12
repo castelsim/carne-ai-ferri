@@ -1595,17 +1595,17 @@ function mostraAvviso(txt) {
 }
 
 /* ================================================================
-   REGIA — modello ibrido (C):
-   - preparazione ELASTICA: suona all'ora del passaggio e ri-suona
-     ogni minuto finché non premi "Fatto"; se il ritardo supera il
-     margine del passaggio, tutto il piano futuro slitta e l'ora
-     del pranzo si aggiorna (ricalcolo onesto).
-   - cottura SUL BINARIO: metti/gira/togli seguono l'orologio,
-     "Fatto" è solo spunta/silenzia — così tutto arriva in tavola
-     insieme e il link condiviso resta sincronizzato senza server.
+   REGIA v6 — PREPARAZIONE elastica (come prima) + COTTURA ADATTIVA.
+   La cottura non è più un binario di timer: per ogni pezzo si parte
+   da una stima con incertezza e la si aggiorna a ogni risposta
+   dell'utente (checkpoint di girata, segnalazioni, temperatura al
+   cuore). Il finale è a controlli, non a minuti. L'ospite (#p=)
+   vede la FOTOGRAFIA del piano: gli aggiustamenti live restano sul
+   telefono di chi griglia (zero server).
    ================================================================ */
 const regiaSez   = document.getElementById("regia-sez");
 const passoEl    = document.getElementById("passo");
+const pezziEl    = document.getElementById("pezzi");
 const regiaBanner = document.getElementById("regia-banner");
 const logEl      = document.getElementById("log");
 const nextStickyEl = document.getElementById("next-sticky");
@@ -1614,6 +1614,27 @@ const sharePianoBtn = document.getElementById("sharePianoBtn");
 
 let regiaTicker = null;
 let confermaAnnulla = null;
+
+/* temperatura al cuore target (°C, al momento di togliere) */
+const TARGETC = {
+  hamburger: 71, tagliata: 52, picanha: 53, bavetta: 54, asado: 70, spiedini_manzo: 60,
+  nodino_vitello: 61, braciola_vitello: 61, tagliata_vitello: 57, spiedini_vitello: 62,
+  salsiccia_vitello: 71, salsiccia: 71, luganega: 71, salamella: 71,
+  rosticciana: 80, costine: 90, braciola: 63, costoletta: 63, wurstel: 65,
+  filetto_maiale: 63, capocollo: 69, bombette: 73, spiedini_maiale: 64, stinco: 72,
+  petto_pollo: 74, coscia_pollo: 78, ali_pollo: 77, galletto: 80, spiedini_pollo: 74,
+  fesa_tacchino: 74, coscia_tacchino: 80, spiedini_tacchino: 74, hamburger_tacchino: 74,
+  costolette_agnello: 57, spiedini_agnello: 59, cosciotto_agnello: 59,
+  salmone: 52, spada: 57, branzino: 60,
+};
+
+function targetC(item) {
+  if (item.gradi) {
+    const g = opzioni[item.id].grado;
+    return g === "rare" ? 52 : g === "well" ? 66 : 58;
+  }
+  return TARGETC[item.id] || null;
+}
 
 function passiPreparazione(items) {
   const p = [];
@@ -1680,23 +1701,150 @@ function costruisciEventi(items) {
   return eventi;
 }
 
-function pianoRegia(items) {
+function pianoRegia(items, ospite) {
   const prep = passiPreparazione(items).map(p => ({ ...p, fase: "prep", tipo: "prep" }));
+  if (!ospite) return prep.map(e => ({ ...e, fatto: false, fired: false, lastRing: 0 }));
   const cott = costruisciEventi(items).map(e => ({ ...e, fase: "cottura", margine: 0, icona: e.tipo === "finale" ? "🍽" : "🔥" }));
   return [...prep, ...cott].map(e => ({ ...e, fatto: false, fired: false, lastRing: 0 }));
 }
 
+/* ---------------- pezzi (motore adattivo, solo host) ---------------- */
+function creaPezzi(items) {
+  return items.map(item => {
+    const stima = cotturaSec(item);
+    const avg = averageRange(item.flip);
+    return {
+      idI: item.id, stima, inc: 0.2, rate: 1, cotto: 0,
+      stato: "attesa", t0: null, fineC: null, girate: 0,
+      girateTot: avg ? Math.min(12, Math.max(1, Math.round(stima / (avg * 60)) - 1)) : 1,
+      riposoSec: item.riposo * 60,
+      check: null, tipoCheck: "metti", avvisato: false, lastRing: 0, at: Date.now(),
+    };
+  });
+}
+
+function residuoPezzo(p) {
+  return Math.max(0, (p.stima - p.cotto) / p.rate);
+}
+
+function etaPezzo(p, sBase) {
+  if (p.stato === "attesa") return Math.max(sBase, Date.now() + residuoPezzo(p) * 1000 + p.riposoSec * 1000);
+  if (p.stato === "pronto") return p.fineC + p.riposoSec * 1000;
+  if (p.stato === "riposo") return p.fineC + p.riposoSec * 1000;
+  return Date.now() + (residuoPezzo(p) + p.riposoSec) * 1000;
+}
+
+function servizioCorrente() {
+  const attivi = regia.pezzi.filter(p => p.stato !== "attesa");
+  const m = attivi.length ? Math.max(...attivi.map(p => etaPezzo(p, regia.T))) : regia.T;
+  return Math.max(regia.T, m);
+}
+
+function scheduleGira(p) {
+  const rimaste = Math.max(0, p.girateTot - p.girate);
+  if (p.cotto / p.stima >= 0.8 || rimaste === 0) {
+    p.stato = "controlli";
+    p.tipoCheck = "controllo";
+    p.check = Date.now() + (rimaste === 0 ? Math.min(150000, residuoPezzo(p) * 700) : 0);
+  } else {
+    p.tipoCheck = "gira";
+    p.check = Date.now() + Math.max(120, residuoPezzo(p) / (rimaste + 1)) * 1000;
+  }
+  p.avvisato = false;
+}
+
+function togliPezzo(p) {
+  const item = byId[p.idI];
+  p.fineC = Date.now();
+  if (p.riposoSec > 0) {
+    p.stato = "riposo";
+    p.tipoCheck = "riposo-fine";
+    p.check = p.fineC + p.riposoSec * 1000;
+    p.avvisato = false;
+    aggiungiLog(`Togli ${item.nome} — in riposo ${item.riposo} min sotto alluminio`);
+  } else {
+    p.stato = "pronto";
+    p.check = null;
+    aggiungiLog(`${item.nome} pronto — in tavola!`);
+  }
+}
+
+function rispondi(idx, az, valore) {
+  const p = regia.pezzi[idx];
+  if (!p) return;
+  const item = byId[p.idI];
+  const now = Date.now();
+
+  if (az === "metti") {
+    p.stato = "fuoco"; p.t0 = now; p.cotto = 0;
+    aggiungiLog(`${item.nome} sulla griglia (stima ${fmtMin(p.stima * (1 - p.inc))}–${fmtMin(p.stima * (1 + p.inc))})`);
+    scheduleGira(p);
+  } else if (az === "girata") {
+    p.girate++;
+    aggiungiLog(`Girata ${item.nome} (${p.girate}${p.girateTot > 1 ? ` di ~${p.girateTot}` : ""})`);
+    scheduleGira(p);
+  } else if (az === "nonancora") {
+    p.stima *= 1.08;
+    p.tipoCheck = "gira"; p.check = now + 120000; p.avvisato = false;
+    aggiungiLog(`${item.nome}: non ancora — ricontrollo tra 2 min`);
+  } else if (az === "brucia") {
+    p.rate = Math.max(0.75, p.rate * 0.85);
+    aggiungiLog(`${item.nome}: sta bruciando → spostala nella zona dolce; rallento la stima`);
+    p.check = now + 120000; p.avvisato = false;
+  } else if (az === "debole" || az === "chiara") {
+    p.rate = Math.max(0.7, p.rate * 0.85);
+    aggiungiLog(`${item.nome}: fuoco debole — ravviva la brace o avvicina la griglia`);
+    p.check = now + 150000; p.avvisato = false;
+  } else if (az === "brace") {
+    p.rate = Math.min(1.25, p.rate * 1.15);
+    aggiungiLog(`${item.nome}: brace ravvivata — accorcio la stima`);
+  } else if (az === "spostata") {
+    p.rate = 1;
+    aggiungiLog(`${item.nome}: spostata — stima riallineata`);
+  } else if (az === "temp") {
+    const T = parseFloat(valore), tgt = targetC(item);
+    if (isFinite(T) && tgt && p.t0) {
+      if (T >= tgt - 1) { togliPezzo(p); }
+      else {
+        const salita = Math.max(3, T - 15);
+        const residuo = Math.min(45 * 60, Math.max(30, ((now - p.t0) / 1000) * (tgt - T) / salita));
+        p.stima = p.cotto + residuo * p.rate;
+        p.inc = 0.08;
+        p.tipoCheck = p.stato === "controlli" ? "controllo" : p.tipoCheck;
+        p.check = now + Math.min(180000, residuo * 500);
+        p.avvisato = false;
+        aggiungiLog(`${item.nome}: ${T}°C al cuore (target ${tgt}°C) → mancano ~${fmtMin(residuo)}`);
+      }
+    }
+  } else if (az === "crudo") {
+    p.stima = p.cotto + 3.5 * 60 * p.rate;
+    p.check = now + 150000; p.avvisato = false;
+    aggiungiLog(`${item.nome}: ancora indietro — ricontrollo tra 2-3 min`);
+  } else if (az === "quasi") {
+    p.stima = p.cotto + 2 * 60 * p.rate;
+    p.check = now + 105000; p.avvisato = false;
+    aggiungiLog(`${item.nome}: quasi — ultimo controllo tra ~2 min`);
+  } else if (az === "pronta") {
+    togliPezzo(p);
+  } else if (az === "impiatta") {
+    p.stato = "pronto"; p.check = null;
+    aggiungiLog(`${item.nome} in tavola`);
+  }
+  salvaStato();
+  tickRegia();
+}
+
+/* ---------------- avvio ---------------- */
 function avviaRegia(T, opts = {}) {
   const items = [...selezione].map(id => byId[id]);
   if (!items.length || !T) return false;
   const maxTot = Math.max(...items.map(totaleSec));
   let base = opts.base ?? T - maxTot * 1000;
-  const eventi = pianoRegia(items);
+  const eventi = pianoRegia(items, !!opts.ospite);
 
   if (opts.base === undefined) {
     // vincolo rigido: accensione carbonella (40 min) + cottura. Le altre
-    // preparazioni sono comprimibili (es. marinatura più breve) e NON
-    // spostano il pranzo.
+    // preparazioni sono comprimibili e NON spostano il pranzo.
     const vincolo = base - 40 * 60 * 1000;
     if (vincolo < Date.now()) {
       const delta = Date.now() - vincolo;
@@ -1706,18 +1854,11 @@ function avviaRegia(T, opts = {}) {
   }
   eventi.forEach(e => { e.abs = base + e.off * 1000; });
   if (opts.base === undefined) {
-    // i passaggi comprimibili già "scaduti" partono adesso, in fila,
-    // senza toccare gli orari del resto del piano
     let t = Date.now();
-    eventi.filter(e => e.comprimibile && e.abs < t).forEach(e => {
-      e.abs = t;
-      t += 120 * 1000;
-    });
-    eventi.sort((a, b) => a.abs - b.abs);   // sort stabile: a parità resta l'ordine metti/gira/togli
+    eventi.filter(e => e.comprimibile && e.abs < t).forEach(e => { e.abs = t; t += 120 * 1000; });
+    eventi.sort((a, b) => a.abs - b.abs);
   }
   (opts.fatti || []).forEach(i => { if (eventi[i]) { eventi[i].fatto = true; eventi[i].fired = true; } });
-  // passato: niente beep; la cottura è sul binario quindi si spunta da sola,
-  // e per l'ospite anche la preparazione (non può agire sul passato)
   eventi.forEach(e => {
     if (e.abs < Date.now()) {
       e.fired = true;
@@ -1725,7 +1866,8 @@ function avviaRegia(T, opts = {}) {
     }
   });
 
-  regia = { T, base, eventi, ospite: !!opts.ospite, maxTot, sliTot: 0 };
+  regia = { T, base, eventi, ospite: !!opts.ospite, maxTot, sliTot: 0,
+            pezzi: opts.ospite ? null : (opts.pezzi || creaPezzi(items)) };
 
   document.getElementById("okBtn").disabled = true;
   giornoEl.disabled = oraEl.disabled = true;
@@ -1748,11 +1890,25 @@ function passoCorrente() {
   return regia.eventi.find(e => !e.fatto) || null;
 }
 
+/* checkpoint del pezzo più urgente (host) */
+function checkpointCorrente() {
+  const cand = regia.pezzi.filter(p => p.check !== null && p.stato !== "pronto");
+  if (!cand.length) return null;
+  cand.sort((a, b) => a.check - b.check);
+  return cand[0];
+}
+
+/* ---------------- tick ---------------- */
+let ultimoTick = Date.now();
+
 function tickRegia() {
   if (!regia) return;
   const now = Date.now();
+  const dt = Math.min(5, (now - ultimoTick) / 1000);
+  ultimoTick = now;
   const evs = regia.eventi;
 
+  // --- preparazione (e, per l'ospite, anche la cottura statica) ---
   evs.forEach((e, i) => {
     if (!e.fired && e.abs <= now) {
       e.fired = true;
@@ -1760,23 +1916,64 @@ function tickRegia() {
       playBeep(e.fase === "prep" ? "prep" : e.tipo);
       if (navigator.vibrate) navigator.vibrate(e.tipo === "finale" ? [200, 100, 200, 100, 400] : [150, 70, 150]);
       sendNotifica(e.titolo);
-      // cottura sul binario: gli eventi precedenti di cottura si spuntano da soli
-      if (e.fase === "cottura") evs.forEach((p, j) => { if (j < i && p.fase === "cottura" && !p.fatto) segnaFatto(j, false); });
+      if (e.fase === "cottura") evs.forEach((p2, j) => { if (j < i && p2.fase === "cottura" && !p2.fatto) segnaFatto(j, false); });
       const li = document.getElementById(`tl-${i}`);
       if (li) li.classList.add("fired");
     }
   });
 
-  const cur = passoCorrente();
-
-  // suoneria insistente sui passaggi di preparazione scaduti
-  if (cur && cur.fase === "prep" && cur.fired && !regia.ospite && now - cur.abs > 55000) {
-    if (now - cur.lastRing > 60000) { cur.lastRing = now; playBeep("prep"); if (navigator.vibrate) navigator.vibrate([150, 70, 150]); }
+  const curPrep = passoCorrente();
+  if (curPrep && curPrep.fase === "prep" && curPrep.fired && !regia.ospite && now - curPrep.abs > 55000) {
+    if (now - curPrep.lastRing > 60000) { curPrep.lastRing = now; playBeep("prep"); if (navigator.vibrate) navigator.vibrate([150, 70, 150]); }
   }
 
-  renderPasso(cur, now);
+  // --- cottura adattiva (solo host) ---
+  let curPezzo = null;
+  if (!regia.ospite && regia.pezzi) {
+    const S = servizioCorrente();
+    regia.pezzi.forEach(p => {
+      if (p.stato === "fuoco" || p.stato === "controlli") {
+        p.cotto += dt * p.rate;
+        if (p.stato === "fuoco" && p.cotto / p.stima >= 0.8) {
+          p.stato = "controlli"; p.tipoCheck = "controllo";
+          p.check = Math.min(p.check ?? now, now); p.avvisato = false;
+        }
+      }
+      if (p.stato === "attesa") {
+        p.check = S - (residuoPezzo(p) + p.riposoSec) * 1000;
+        p.tipoCheck = "metti";
+      }
+      if (p.check !== null && p.check <= now && !p.avvisato && p.stato !== "pronto") {
+        p.avvisato = true; p.lastRing = now;
+        const nome = byId[p.idI].nome;
+        const msg = { metti: `Metti ${nome} sulla griglia`, gira: `Controlla il lato inferiore di ${nome}`,
+                      controllo: `${nome}: controlla (o misura al cuore)`, "riposo-fine": `${nome}: riposo finito — impiatta` }[p.tipoCheck];
+        aggiungiLog(msg); playBeep(p.tipoCheck === "metti" ? "metti" : "gira");
+        if (navigator.vibrate) navigator.vibrate([150, 70, 150]);
+        sendNotifica(msg);
+      }
+      if (p.avvisato && p.check !== null && now - p.lastRing > 60000) {   // insiste
+        p.lastRing = now; playBeep("gira");
+      }
+    });
+    curPezzo = checkpointCorrente();
+    renderServizio(S);
+    renderPezzi(now);
+  }
 
-  if (!cur) {                                   // finale raggiunto e spuntato
+  // --- card unica: il più urgente tra preparazione e pezzi ---
+  if (!regia.ospite && curPezzo && (!curPrep || curPezzo.check <= curPrep.abs || curPezzo.check <= now)) {
+    renderCheckpoint(curPezzo, now);
+  } else {
+    renderPasso(curPrep, now);
+  }
+
+  const finita = regia.ospite
+    ? !curPrep
+    : (!curPrep || evs.every(e => e.fatto)) && regia.pezzi.every(p => p.stato === "pronto");
+  if (finita) {
+    passoEl.innerHTML = `<div class="passo finita"><div class="cosa">🍽 Tutto in tavola — buon appetito!</div></div>`;
+    nextStickyEl.classList.add("hidden");
     clearInterval(regiaTicker); regiaTicker = null;
     releaseWakeLock();
   }
@@ -1789,14 +1986,13 @@ function segnaFatto(idx, manuale) {
   const li = document.getElementById(`tl-${idx}`);
   if (li) { li.classList.add("done"); li.querySelector("input").checked = true; }
 
-  // preparazione elastica: oltre il margine, tutto il futuro slitta
   if (manuale && e.fase === "prep" && !regia.ospite && e.fired) {
     const ritardo = (Date.now() - e.abs) / 1000;
     const sli = Math.max(0, ritardo - e.margine);
     if (sli > 30) {
       regia.eventi.forEach(x => { if (!x.fatto) x.abs += sli * 1000; });
       regia.T += sli * 1000;
-      regia.base += sli * 1000;      // così link e ripristino ricostruiscono gli orari futuri giusti
+      regia.base += sli * 1000;
       regia.sliTot += sli;
       aggiungiLog(`⏲ Ritardo oltre il margine: il piano slitta di ${Math.round(sli / 60)} min — si mangia alle ${formatTime(new Date(regia.T))}. Se hai condiviso il piano, rimanda il link.`);
       renderRegiaBanner();
@@ -1814,18 +2010,121 @@ function premiFatto() {
   tickRegia();
 }
 
+/* ---------------- render ---------------- */
 function renderRegiaBanner() {
-  regiaBanner.innerHTML = `🍽 Si mangia <strong>${fmtGiorno(regia.T)} alle ${formatTime(new Date(regia.T))}</strong>` +
-    ` · prima carne sulla griglia alle ${formatTime(new Date(regia.base))}` +
+  regiaBanner.innerHTML = `🍽 Obiettivo: <strong>${fmtGiorno(regia.T)} alle ${formatTime(new Date(regia.T))}</strong>` +
+    ` · prima carne sulla griglia ~${formatTime(new Date(regia.base))}` +
     (regia.sliTot > 30 ? ` · <span class="slittato">piano slittato di ${Math.round(regia.sliTot / 60)} min</span>` : "");
 }
 
-function renderPasso(cur, now) {
-  if (!cur) {
-    passoEl.innerHTML = `<div class="passo finita"><div class="cosa">🍽 Tutto in tavola — buon appetito!</div></div>`;
-    nextStickyEl.classList.add("hidden");
-    return;
+function renderServizio(S) {
+  const el = document.getElementById("servizio");
+  const delta = Math.round((S - regia.T) / 60000);
+  el.innerHTML = `
+    <div><span class="lbl">In tavola previsto</span><span class="ora">${formatTime(new Date(S))}</span></div>
+    <div><span class="lbl">Obiettivo</span><span class="ora obiettivo">${formatTime(new Date(regia.T))}</span></div>
+    ${delta > 0 ? `<div class="delta">+${delta} min</div>` : delta < 0 ? `<div class="delta ok">${delta} min</div>` : `<div class="delta ok">in orario</div>`}`;
+}
+
+function renderPezzi(now) {
+  const S = servizioCorrente();
+  pezziEl.innerHTML = regia.pezzi.map((p, i) => {
+    const item = byId[p.idI];
+    const f = Math.min(1, p.cotto / p.stima);
+    const res = residuoPezzo(p);
+    const icone = { attesa: "🧺", fuoco: "🔥", controlli: "🌡", riposo: "🛌", pronto: "✅" };
+    let riga;
+    if (p.stato === "attesa")       riga = `in attesa · al fuoco ~${formatTime(new Date(p.check || S))}`;
+    else if (p.stato === "fuoco")   riga = `al fuoco da ${formatSeconds(Math.floor((now - p.t0) / 1000))} · residuo ${fmtMin(res * (1 - p.inc))}–${fmtMin(res * (1 + p.inc))}${p.riposoSec ? ` · poi riposo ${Math.round(p.riposoSec / 60)}` : ""}`;
+    else if (p.stato === "controlli") riga = `quasi: fase controlli · residuo ~${fmtMin(res)}`;
+    else if (p.stato === "riposo")  riga = `in riposo · impiatta alle ${formatTime(new Date(p.fineC + p.riposoSec * 1000))}`;
+    else                            riga = `pronto ✔`;
+    const tgt = targetC(item);
+    const temp = (p.stato === "fuoco" || p.stato === "controlli") && tgt
+      ? `<span class="mini-temp">🌡 <input type="number" inputmode="numeric" placeholder="°C" data-temp="${i}"><button type="button" data-usatemp="${i}">ok</button></span>` : "";
+    const segnala = (p.stato === "fuoco" || p.stato === "controlli")
+      ? `<span class="mini-az"><button type="button" data-az="brucia" data-p="${i}" title="Sta bruciando">🔥</button><button type="button" data-az="debole" data-p="${i}" title="Fuoco debole">🪵</button><button type="button" data-az="brace" data-p="${i}" title="Ho aggiunto brace">➕</button></span>` : "";
+    return `
+      <div class="pezzo${p.stato === "fuoco" || p.stato === "controlli" ? " fuoco" : ""}">
+        <span class="stato">${icone[p.stato]}</span>
+        <div class="righe">
+          <div class="nome">${item.nome}</div>
+          <div class="m">${riga}</div>
+          <div class="barra"><i style="width:${Math.round(f * 100)}%"></i></div>
+          <div class="mini-riga">${segnala}${temp}</div>
+        </div>
+        <div class="eta"><span class="lbl">pronta</span>${formatTime(new Date(etaPezzo(p, S)))}</div>
+      </div>`;
+  }).join("");
+
+  pezziEl.querySelectorAll("[data-az]").forEach(b =>
+    b.addEventListener("click", () => rispondi(parseInt(b.dataset.p, 10), b.dataset.az)));
+  pezziEl.querySelectorAll("[data-usatemp]").forEach(b =>
+    b.addEventListener("click", () => {
+      const i = parseInt(b.dataset.usatemp, 10);
+      const inp = pezziEl.querySelector(`[data-temp="${i}"]`);
+      if (inp && inp.value) rispondi(i, "temp", inp.value);
+    }));
+}
+
+function renderCheckpoint(p, now) {
+  const i = regia.pezzi.indexOf(p);
+  const item = byId[p.idI];
+  const due = p.check <= now;
+  const quando = due
+    ? `${formatTime(new Date(p.check))} — ADESSO 🔔`
+    : `alle ${formatTime(new Date(p.check))} · tra ${formatSeconds(Math.ceil((p.check - now) / 1000))}`;
+  const tgt = targetC(item);
+
+  let titolo, perche, bottoni;
+  if (p.tipoCheck === "metti") {
+    titolo = `🔥 Metti ${item.nome} sulla griglia`;
+    perche = notaPrep(item.id) || "";
+    bottoni = `<button type="button" class="ok" data-az="metti" data-p="${i}">✓ È sulla griglia</button>`;
+  } else if (p.tipoCheck === "gira") {
+    titolo = `👀 Controlla il lato inferiore di ${item.nome}`;
+    perche = `Girata ${p.girate + 1}${p.girateTot > 1 ? ` di ~${p.girateTot}` : ""} — cerco doratura decisa, non bruciata.${BAGNA[item.id] ? ` Spennella: ${BAGNA[item.id]}.` : ""}`;
+    bottoni = `
+      <button type="button" class="ok" data-az="girata" data-p="${i}">↩ Girata</button>
+      <button type="button" data-az="nonancora" data-p="${i}">⏳ Non ancora</button>
+      <button type="button" class="hot" data-az="brucia" data-p="${i}">🔥 Sta bruciando</button>
+      <button type="button" class="warn" data-az="debole" data-p="${i}">🪵 Fuoco debole</button>`;
+  } else if (p.tipoCheck === "controllo") {
+    titolo = `🌡 ${item.nome}: com'è?`;
+    perche = `Siamo oltre l'80%: da qui si va a controlli, non a minuti.${tgt ? ` Target al cuore: ${tgt}°C.` : ""} ${item.tempInterna}`;
+    bottoni = `
+      <button type="button" class="warn" data-az="crudo" data-p="${i}">Ancora indietro</button>
+      <button type="button" data-az="quasi" data-p="${i}">Quasi pronta</button>
+      <button type="button" class="ok" data-az="pronta" data-p="${i}">✔ Pronta → ${p.riposoSec ? "riposo" : "tavola"}</button>` +
+      (tgt ? `<span class="temp-chk">🌡 <input type="number" inputmode="numeric" placeholder="°C" id="chk-temp"><button type="button" data-aztemp="${i}">Usa la temperatura</button></span>` : "");
+  } else {   // riposo-fine
+    titolo = `🍽 ${item.nome}: riposo finito`;
+    perche = "Impiatta e porta in tavola.";
+    bottoni = `<button type="button" class="ok" data-az="impiatta" data-p="${i}">✓ In tavola</button>`;
   }
+
+  passoEl.innerHTML = `
+    <div class="passo checkpoint${due ? " due" : ""}">
+      <span class="fase-tag">Cottura adattiva · ${item.nome}${p.t0 ? ` · al fuoco da ${formatSeconds(Math.floor((now - p.t0) / 1000))}` : ""}</span>
+      <div class="cosa">${titolo}</div>
+      <div class="quando">${quando}</div>
+      <div class="dett">${perche}</div>
+      <div class="risposte">${bottoni}</div>
+    </div>`;
+
+  passoEl.querySelectorAll("[data-az]").forEach(b =>
+    b.addEventListener("click", () => rispondi(parseInt(b.dataset.p, 10), b.dataset.az)));
+  passoEl.querySelectorAll("[data-aztemp]").forEach(b =>
+    b.addEventListener("click", () => {
+      const inp = document.getElementById("chk-temp");
+      if (inp && inp.value) rispondi(parseInt(b.dataset.aztemp, 10), "temp", inp.value);
+    }));
+
+  nextStickyEl.innerHTML = `<span>${titolo}</span><span class="tempo">${due ? "ORA 🔔" : formatSeconds(Math.ceil((p.check - now) / 1000))}</span>`;
+}
+
+function renderPasso(cur, now) {
+  if (!cur) return;   // il tick gestisce il caso "tutto finito"
   const idx = regia.eventi.indexOf(cur);
   const nPrep = regia.eventi.filter(e => e.fase === "prep").length;
   const posTxt = cur.fase === "prep"
@@ -1868,7 +2167,7 @@ function renderTimelineRegia() {
       faseCorr = e.fase;
       const h = document.createElement("li");
       h.className = "fase-sep";
-      h.textContent = faseCorr === "prep" ? "— Preparazione —" : "— Cottura —";
+      h.textContent = faseCorr === "prep" ? "— Preparazione —" : "— Cottura (prevista) —";
       list.appendChild(h);
     }
     const li = document.createElement("li");
@@ -2024,7 +2323,7 @@ function bootPiano() {
   document.body.classList.add("ospite");     // PRIMA di caricare: l'ospite non deve toccare il salvataggio locale
   if (!caricaSelezione(dati)) { document.body.classList.remove("ospite"); return false; }
   avviaRegia(dati.T, { base: dati.b, ospite: true });
-  bannerOspite(`🔥 <strong>Regia condivisa</strong> — si mangia ${fmtGiorno(dati.T)} alle ${formatTime(new Date(dati.T))}. Ogni passaggio qui sotto è sincronizzato sull'orologio; "Fatto" spegne solo la tua suoneria.`);
+  bannerOspite(`🔥 <strong>Piano condiviso (fotografia)</strong> — obiettivo: si mangia ${fmtGiorno(dati.T)} alle ${formatTime(new Date(dati.T))}. Questo è il programma previsto: gli aggiustamenti live della cottura adattiva restano sul telefono di chi griglia.`);
   return true;
 }
 
@@ -2082,7 +2381,9 @@ function salvaStato() {
       sc: sceltePayload([...selezione].map(id => byId[id])),
       p: [adultiEl.value, bambiniEl.value, appetitoEl.value, contorniEl.value],
       g: giornoEl.value, h: oraEl.value,
-      regia: regia && !regia.ospite ? { T: regia.T, b: regia.base, f: regia.eventi.map((e, i) => e.fatto ? i : -1).filter(i => i >= 0), s: regia.sliTot } : null,
+      regia: regia && !regia.ospite ? { T: regia.T, b: regia.base, f: regia.eventi.map((e, i) => e.fatto ? i : -1).filter(i => i >= 0), s: regia.sliTot,
+        at: Date.now(),
+        pz: regia.pezzi ? regia.pezzi.map(p => ({ idI: p.idI, stato: p.stato, t0: p.t0, fineC: p.fineC, cotto: p.cotto, stima: p.stima, rate: p.rate, inc: p.inc, girate: p.girate, check: p.check, tipoCheck: p.tipoCheck })) : null } : null,
     };
     localStorage.setItem(LS_KEY, JSON.stringify(stato));
   } catch (_) {}
@@ -2103,7 +2404,20 @@ function caricaStato() {
   if (st.h) oraEl.value = st.h;
   if (Array.isArray(st.sel) && st.sel.length) caricaSelezione({ i: st.sel, o: st.opz, sc: st.sc });
   if (st.regia && isFinite(st.regia.T) && st.regia.T > Date.now() - 2 * 3600 * 1000) {
-    avviaRegia(st.regia.T, { base: st.regia.b, fatti: st.regia.f || [] });
+    let pezzi;
+    if (Array.isArray(st.regia.pz)) {
+      const items = [...selezione].map(id => byId[id]);
+      pezzi = creaPezzi(items).map(base => {
+        const q = st.regia.pz.find(x => x.idI === base.idI);
+        if (!q) return base;
+        const p = { ...base, ...q, avvisato: false, lastRing: 0 };
+        if ((p.stato === "fuoco" || p.stato === "controlli") && st.regia.at) {
+          p.cotto += Math.max(0, (Date.now() - st.regia.at) / 1000) * p.rate;   // recupera il tempo perso nel reload
+        }
+        return p;
+      });
+    }
+    avviaRegia(st.regia.T, { base: st.regia.b, fatti: st.regia.f || [], pezzi });
     if (regia) regia.sliTot = st.regia.s || 0;
     renderRegiaBanner();
   }
